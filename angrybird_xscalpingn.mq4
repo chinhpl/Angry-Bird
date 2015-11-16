@@ -19,7 +19,6 @@ extern int rsi_max     = 70.0;
 extern int rsi_min     = 40.0;
 extern int rsi_period  = 12;
 extern int dev_period  = 12;
-extern int sma_period  = 12;
 extern double exp_base = 1.5;
 extern double lots     = 0.01;
 extern double target_m = 1;
@@ -46,7 +45,7 @@ int start()
     previous_time = Time[0];
     Update();
 
-    if (total == 0 && pipstep >= i_takeprofit)
+    if (total == 0)
     { /* All the actions that occur when a trade is signaled */
         if (IndicatorSignal() == OP_BUY)
         {
@@ -104,15 +103,14 @@ void Update()
 
     i_takeprofit =
         MathRound((commission / delta) + ((all_lots * target_m) / delta));
-    pipstep =
-        2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+    RefreshRates();
 
     if (!IsOptimization())
     {
         int time_difference = TimeCurrent() - Time[0];
         int tp_dist         = 0;
         double order_spread = 0;
-
         if (short_trade)
         {
             tp_dist      = (Bid - last_sell_price) / Point;
@@ -123,14 +121,12 @@ void Update()
             tp_dist      = (last_buy_price - Ask) / Point;
             order_spread = (price_target - last_buy_price) / Point;
         }
-
         name = AccountBalance();
 
         Comment("Trade Distance: " + tp_dist + " Pipstep: " + pipstep +
                 " Spread: " + order_spread + " Take Profit: " + i_takeprofit +
                 " Time: " + time_difference);
     }
-    RefreshRates();
 }
 
 void NewOrdersPlaced()
@@ -153,9 +149,8 @@ void UpdateAveragePrice()
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
-            average_price +=
-                OrderOpenPrice() * (OrderLots() - OrderCommission());
-            count += (OrderLots() - OrderCommission());
+            average_price += OrderOpenPrice() * OrderLots();
+            count         += OrderLots();
         }
     }
     average_price = NormalizeDouble(average_price / count, Digits);
@@ -192,10 +187,10 @@ void UpdateOpenOrders()
 int IndicatorSignal()
 {
     double rsi = iMFI(NULL, 0, rsi_period, 1);
-    double sma =  iMA(NULL, 0, sma_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    //double sma =  iMA(NULL, 0, sma_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
 
-    if (rsi > rsi_max && Bid > sma) return OP_SELL;
-    if (rsi < rsi_min && Ask < sma) return OP_BUY;
+    if (rsi > rsi_max) return OP_SELL;
+    if (rsi < rsi_min) return OP_BUY;
     return (-1);
 }
 /******************************************************************************
