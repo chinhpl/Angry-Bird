@@ -92,11 +92,15 @@ void Update()
         {
                 if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
                 {
-                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrRed);
+                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+                    UpdateAveragePrice();
+                    UpdateOpenOrders();
                 }    
                 if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
                 {
-                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrRed);
+                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+                    UpdateAveragePrice();
+                    UpdateOpenOrders();
                 }    
         }
     }
@@ -119,14 +123,10 @@ void Update()
         commission  = lots;
         all_lots    = lots;
     }
-    else
-    {
-        i_takeprofit =
-            MathRound((commission / delta) + (all_lots / delta));
-        RefreshRates();
-        UpdateAveragePrice();
-        UpdateOpenOrders();
-    }
+    
+    i_takeprofit =
+        MathRound((commission / delta) + (all_lots / delta));
+    RefreshRates();
 
     if (!IsOptimization())
     {
