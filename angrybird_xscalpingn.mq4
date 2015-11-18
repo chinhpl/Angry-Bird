@@ -20,6 +20,7 @@ extern int rsi_min     = 40.0;
 extern int rsi_period  = 12;
 extern int dev_period  = 12;
 extern double exp_base = 1.5;
+extern double take_mul = 0.5;
 extern double lots     = 0.01;
 
 int init()
@@ -41,7 +42,7 @@ int init()
 int deinit() { return (0); }
 int start()
 { /* Sleeps until next bar opens if a trade is made */
-    if (!IsOptimization()) Update();
+    //if (!IsOptimization()) Update();
     if (previous_time == Time[0]) return (0);
     previous_time = Time[0];
     Update();
@@ -52,12 +53,14 @@ int start()
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
             NewOrdersPlaced();
         }
         else if (IndicatorSignal() == OP_SELL)
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
             NewOrdersPlaced();
         }
     }
@@ -67,6 +70,7 @@ int start()
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
             NewOrdersPlaced();
         }
     }
@@ -76,6 +80,7 @@ int start()
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
             NewOrdersPlaced();
         }
     }
@@ -85,7 +90,7 @@ int start()
 void Update()
 {
     total                 = CountTrades();
-    for (int i = 1; i < total - 1; i++)
+    for (int i = 0; i < total - 1; i++)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
@@ -111,8 +116,6 @@ void Update()
     double delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
     double lot_multiplier = MathPow(exp_base, (total));
     i_lots                = NormalizeDouble(lots * lot_multiplier, lotdecimal);
-    last_buy_price        = FindLastBuyPrice();
-    last_sell_price       = FindLastSellPrice();
     pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
 
     if (total == 0)
@@ -125,7 +128,7 @@ void Update()
     }
     
     i_takeprofit =
-        MathRound((commission / delta) + (all_lots / delta));
+        MathRound((commission / delta) + (all_lots * take_mul / delta));
     RefreshRates();
 
     if (!IsOptimization())
