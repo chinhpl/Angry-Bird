@@ -42,10 +42,30 @@ int init()
 int deinit() { return (0); }
 int start()
 { /* Sleeps until next bar opens if a trade is made */
-    //if (!IsOptimization()) Update();
+    if (!IsOptimization()) Update();
     if (previous_time == Time[0]) return (0);
     previous_time = Time[0];
     Update();
+    for (int i = 0; i < total - 1; i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
+        {
+                if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+                    UpdateAveragePrice();
+                    UpdateOpenOrders();
+                }    
+                if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+                    UpdateAveragePrice();
+                    UpdateOpenOrders();
+                }    
+        }
+    }
+    total = CountTrades();
 
     if (total == 0)
     { /* All the actions that occur when a trade is signaled */
@@ -90,27 +110,6 @@ int start()
 void Update()
 {
     total                 = CountTrades();
-    for (int i = 0; i < total - 1; i++)
-    {
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
-        {
-                if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
-                {
-                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-                    UpdateAveragePrice();
-                    UpdateOpenOrders();
-                }    
-                if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
-                {
-                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
-                    UpdateAveragePrice();
-                    UpdateOpenOrders();
-                }    
-        }
-    }
-    total                 = CountTrades();
-    
     double commission     = CalculateCommission() * -1;
     double all_lots       = CalculateLots();
     double delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
