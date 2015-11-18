@@ -6,6 +6,10 @@ double i_takeprofit    = 0;
 double last_buy_price  = 0;
 double last_sell_price = 0;
 double price_target    = 0;
+double commission      = 0;
+double all_lots        = 0;
+double delta           = 0;
+double lot_multiplier  = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
@@ -26,13 +30,12 @@ extern double lots     = 0.01;
 int init()
 {
     if (rsi_min > rsi_max) ExpertRemove();
-    Update();
+    total = CountTrades();
     if (total)
     {
         last_buy_price  = FindLastBuyPrice();
         last_sell_price = FindLastSellPrice();
-        UpdateAveragePrice();
-        UpdateOpenOrders();
+        NewOrdersPlaced();
     }
     ObjectCreate("Average Price", OBJ_HLINE, 0, 0, average_price, 0, 0, 0, 0);
     ObjectSet("Average Price", OBJPROP_COLOR, clrLimeGreen);
@@ -54,14 +57,14 @@ int start()
                 if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
                 {
                     error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-                    UpdateAveragePrice();
-                    UpdateOpenOrders();
+                    last_buy_price = FindLastBuyPrice();
+                    NewOrdersPlaced();
                 }    
                 if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
                 {
                     error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
-                    UpdateAveragePrice();
-                    UpdateOpenOrders();
+                    last_sell_price = FindLastSellPrice();
+                    NewOrdersPlaced();
                 }    
         }
     }
@@ -109,12 +112,8 @@ int start()
 
 void Update()
 {
-    total                 = CountTrades();
-    double commission     = CalculateCommission() * -1;
-    double all_lots       = CalculateLots();
-    double delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    double lot_multiplier = MathPow(exp_base, (total));
-    i_lots                = NormalizeDouble(lots * lot_multiplier, lotdecimal);
+    lot_multiplier = MathPow(exp_base, (total));
+    i_lots         = NormalizeDouble(lots * lot_multiplier, lotdecimal);
     pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
 
     if (total == 0)
@@ -160,6 +159,11 @@ void NewOrdersPlaced()
     {
         ExpertRemove();
     }
+    total          = CountTrades();
+    commission     = CalculateCommission() * -1;
+    all_lots       = CalculateLots();
+    delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
+    
     Update();
     UpdateAveragePrice();
     UpdateOpenOrders();
@@ -265,15 +269,15 @@ double CalculateProfit()
 
 double CalculateCommission()
 {
-    double commission = 0;
+    double p_commission = 0;
     for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--)
     {
         error = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
             if (OrderType() == OP_BUY || OrderType() == OP_SELL)
-                commission += OrderCommission();
+                p_commission += OrderCommission();
     }
-    return (commission);
+    return (p_commission);
 }
 
 double CalculateLots()
