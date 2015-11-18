@@ -21,7 +21,6 @@ extern int rsi_period  = 12;
 extern int dev_period  = 12;
 extern double exp_base = 1.5;
 extern double lots     = 0.01;
-extern double target_m = 1;
 
 int init()
 {
@@ -34,6 +33,8 @@ int init()
         UpdateAveragePrice();
         UpdateOpenOrders();
     }
+    ObjectCreate("Average Price", OBJ_HLINE, 0, 0, average_price, 0, 0, 0, 0);
+    ObjectSet("Average Price", OBJPROP_COLOR, clrLimeGreen);
     return (0);
 }
 
@@ -102,7 +103,7 @@ void Update()
     }
 
     i_takeprofit =
-        MathRound((commission / delta) + ((all_lots * target_m) / delta));
+        MathRound((commission / delta) + (all_lots / delta));
     pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     RefreshRates();
 
@@ -122,6 +123,7 @@ void Update()
             order_spread = (price_target - last_buy_price) / Point;
         }
         name = AccountBalance();
+        ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
         Comment("Trade Distance: " + tp_dist + " Pipstep: " + pipstep +
                 " Spread: " + order_spread + " Take Profit: " + i_takeprofit +
@@ -154,6 +156,7 @@ void UpdateAveragePrice()
         }
     }
     average_price = NormalizeDouble(average_price / count, Digits);
+    
 }
 
 void UpdateOpenOrders()
