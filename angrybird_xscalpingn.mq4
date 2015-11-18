@@ -85,6 +85,23 @@ int start()
 void Update()
 {
     total                 = CountTrades();
+    for (int i = 1; i < total - 1; i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
+        {
+                if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrRed);
+                }    
+                if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrRed);
+                }    
+        }
+    }
+    total                 = CountTrades();
+    
     double commission     = CalculateCommission() * -1;
     double all_lots       = CalculateLots();
     double delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
@@ -92,6 +109,7 @@ void Update()
     i_lots                = NormalizeDouble(lots * lot_multiplier, lotdecimal);
     last_buy_price        = FindLastBuyPrice();
     last_sell_price       = FindLastSellPrice();
+    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
 
     if (total == 0)
     { /* Reset */
@@ -101,11 +119,14 @@ void Update()
         commission  = lots;
         all_lots    = lots;
     }
-
-    i_takeprofit =
-        MathRound((commission / delta) + (all_lots / delta));
-    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
-    RefreshRates();
+    else
+    {
+        i_takeprofit =
+            MathRound((commission / delta) + (all_lots / delta));
+        RefreshRates();
+        UpdateAveragePrice();
+        UpdateOpenOrders();
+    }
 
     if (!IsOptimization())
     {
