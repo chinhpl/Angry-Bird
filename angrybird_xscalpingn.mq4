@@ -9,7 +9,7 @@ double price_target    = 0;
 double commission      = 0;
 double all_lots        = 0;
 double delta           = 0;
-double lot_multiplier  = 0;
+double rsi             = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
@@ -19,12 +19,12 @@ int slip               = 1;
 int total              = 0;
 string comment         = "";
 string name            = "Ilan1.6";
-extern int rsi_max     = 70.0;
-extern int rsi_min     = 40.0;
-extern int rsi_period  = 12;
-extern int dev_period  = 12;
-extern double exp_base = 1.5;
-extern double take_mul = 0.5;
+extern int rsi_max     = 60.0;
+extern int rsi_min     = 60.0;
+extern int rsi_period  = 17;
+extern int dev_period  = 2;
+extern double exponent_base = 1.5;
+extern double takeprofit_ratio = 0.5;
 extern double lots     = 0.01;
 
 int init()
@@ -38,7 +38,7 @@ int init()
         NewOrdersPlaced();
     }
     ObjectCreate("Average Price", OBJ_HLINE, 0, 0, average_price, 0, 0, 0, 0);
-    ObjectSet("Average Price", OBJPROP_COLOR, clrLimeGreen);
+    ObjectSet("Average Price", OBJPROP_COLOR, clrHotPink);
     return (0);
 }
 
@@ -54,13 +54,13 @@ int start()
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
-                if (OrderType() == OP_BUY && OrderOpenPrice() > average_price && OrderProfit() >= (OrderCommission() * -1))
+                if (OrderType() == OP_BUY && OrderProfit() >= (OrderCommission() * -1))
                 {
                     error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
                     last_buy_price = FindLastBuyPrice();
                     NewOrdersPlaced();
                 }    
-                if (OrderType() == OP_SELL && OrderOpenPrice() < average_price && OrderProfit() >= (OrderCommission() * -1))
+                if (OrderType() == OP_SELL && OrderProfit() >= (OrderCommission() * -1))
                 {
                     error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
                     last_sell_price = FindLastSellPrice();
@@ -112,22 +112,23 @@ int start()
 
 void Update()
 {
-    lot_multiplier = MathPow(exp_base, (total));
-    i_lots         = NormalizeDouble(lots * lot_multiplier, lotdecimal);
+    total = CountTrades();
+    double lots_multiplier = MathPow(exponent_base, total);
+    i_lots = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
-
+    
     if (total == 0)
     { /* Reset */
-        short_trade = FALSE;
-        long_trade  = FALSE;
-        delta       = MarketInfo(Symbol(), MODE_TICKVALUE) * lots;
-        commission  = lots;
-        all_lots    = lots;
+        short_trade    = FALSE;
+        long_trade     = FALSE;
+        delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * lots;
+        commission     = 0;
+        all_lots       = 0;
+        i_takeprofit   = 0;
+        average_price  = 0;
+        last_buy_price = 0;
+        last_sell_price = 0;
     }
-    
-    i_takeprofit =
-        MathRound((commission / delta) + (all_lots * take_mul / delta));
-    RefreshRates();
 
     if (!IsOptimization())
     {
@@ -144,12 +145,12 @@ void Update()
             tp_dist      = (last_buy_price - Ask) / Point;
             order_spread = (price_target - last_buy_price) / Point;
         }
-        name = AccountBalance();
+        name = AccountBalance() + "\n";
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
         Comment("Trade Distance: " + tp_dist + " Pipstep: " + pipstep +
                 " Spread: " + order_spread + " Take Profit: " + i_takeprofit +
-                " Time: " + time_difference);
+                " Lots: " + i_lots + " Time: " + time_difference);
     }
 }
 
@@ -163,8 +164,9 @@ void NewOrdersPlaced()
     commission     = CalculateCommission() * -1;
     all_lots       = CalculateLots();
     delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    
-    Update();
+    i_takeprofit =
+        MathRound((commission / delta) + (all_lots * takeprofit_ratio / delta));
+        
     UpdateAveragePrice();
     UpdateOpenOrders();
 }
@@ -216,8 +218,7 @@ void UpdateOpenOrders()
 
 int IndicatorSignal()
 {
-    double rsi = iMFI(NULL, 0, rsi_period, 1);
-    //double sma =  iMA(NULL, 0, sma_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    rsi = iMFI(NULL, 0, rsi_period, 1);
 
     if (rsi > rsi_max) return OP_SELL;
     if (rsi < rsi_min) return OP_BUY;
@@ -310,7 +311,7 @@ double FindLastBuyPrice()
             if (oldticketnumber > ticketnumber)
             {
                 oldorderopenprice = OrderOpenPrice();
-                ticketnumber      = oldticketnumber;
+                ticketnumber     = oldticketnumber;
             }
         }
     }
