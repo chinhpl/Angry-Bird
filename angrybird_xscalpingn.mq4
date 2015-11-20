@@ -49,23 +49,31 @@ int start()
     if (previous_time == Time[0]) return (0);
     previous_time = Time[0];
     Update();
-    for (int i = 0; i < total - 1; i++)
+    
+    if (long_trade && Bid > average_price)
     {
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
+        for (int i = 0; i < total - 1; i++)
         {
-                if (OrderType() == OP_BUY && OrderProfit() >= (OrderCommission() * -1))
-                {
-                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-                    last_buy_price = FindLastBuyPrice();
-                    NewOrdersPlaced();
-                }    
-                if (OrderType() == OP_SELL && OrderProfit() >= (OrderCommission() * -1))
-                {
-                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
-                    last_sell_price = FindLastSellPrice();
-                    NewOrdersPlaced();
-                }    
+            error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+            if (OrderOpenPrice() > average_price && OrderProfit() >= OrderCommission() * -1)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrHotPink);
+                last_buy_price = FindLastBuyPrice();
+                NewOrdersPlaced();
+            }
+        }
+    }
+    else if (short_trade && Ask < average_price)
+    {
+        for (i = 0; i < total - 1; i++)
+        {
+            error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+            if (OrderOpenPrice() < average_price && OrderProfit() >= OrderCommission() * -1)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrHotPink);
+                last_sell_price = FindLastSellPrice();
+                NewOrdersPlaced();
+            }
         }
     }
     total = CountTrades();
@@ -115,7 +123,7 @@ void Update()
     total = CountTrades();
     double lots_multiplier = MathPow(exponent_base, total);
     i_lots = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_CLOSE, 0) / Point;
     
     if (total == 0)
     { /* Reset */
@@ -218,7 +226,7 @@ void UpdateOpenOrders()
 
 int IndicatorSignal()
 {
-    rsi = iMFI(NULL, 0, rsi_period, 1);
+    rsi = iRSI(NULL, NULL, rsi_period, PRICE_CLOSE, 1);
 
     if (rsi > rsi_max) return OP_SELL;
     if (rsi < rsi_min) return OP_BUY;
