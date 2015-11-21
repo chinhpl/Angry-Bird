@@ -7,6 +7,7 @@ double last_buy_price  = 0;
 double last_sell_price = 0;
 double price_target    = 0;
 double commission      = 0;
+double lots_multiplier = 0;
 double all_lots        = 0;
 double delta           = 0;
 double rsi             = 0;
@@ -30,7 +31,7 @@ extern double lots     = 0.01;
 int init()
 {
     if (rsi_min > rsi_max) ExpertRemove();
-    total = CountTrades();
+    total = OrdersTotal();
     if (total)
     {
         last_buy_price  = FindLastBuyPrice();
@@ -43,6 +44,7 @@ int init()
 }
 
 int deinit() { return (0); }
+
 int start()
 { /* Sleeps until next bar opens if a trade is made */
     if (!IsOptimization()) Update();
@@ -76,7 +78,7 @@ int start()
             }
         }
     }
-    total = CountTrades();
+    total = OrdersTotal();
 
     if (total == 0)
     { /* All the actions that occur when a trade is signaled */
@@ -120,10 +122,8 @@ int start()
 
 void Update()
 {
-    total = CountTrades();
-    double lots_multiplier = MathPow(exponent_base, total);
-    i_lots = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_CLOSE, 0) / Point;
+    total = OrdersTotal();
+    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     
     if (total == 0)
     { /* Reset */
@@ -136,6 +136,7 @@ void Update()
         average_price  = 0;
         last_buy_price = 0;
         last_sell_price = 0;
+        i_lots = lots;
     }
 
     if (!IsOptimization())
@@ -166,9 +167,13 @@ void NewOrdersPlaced()
 { /* Prevents bad results showing in tester */
     if (IsTesting() && error < 0)
     {
+        error = OrderSend(Symbol(), OP_BUY, (AccountFreeMargin() / Ask) * 2.95, Ask, slip, 0, 0, name,
+                              magic_number, 0, 0);
         ExpertRemove();
     }
-    total          = CountTrades();
+    total          = OrdersTotal();
+    lots_multiplier = MathPow(exponent_base, total);
+    i_lots = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     commission     = CalculateCommission() * -1;
     all_lots       = CalculateLots();
     delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
@@ -226,7 +231,7 @@ void UpdateOpenOrders()
 
 int IndicatorSignal()
 {
-    rsi = iRSI(NULL, NULL, rsi_period, PRICE_CLOSE, 1);
+    rsi = iRSI(NULL, NULL, rsi_period, PRICE_TYPICAL, 1);
 
     if (rsi > rsi_max) return OP_SELL;
     if (rsi < rsi_min) return OP_BUY;
