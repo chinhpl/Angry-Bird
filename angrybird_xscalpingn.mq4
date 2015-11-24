@@ -20,12 +20,12 @@ int slip               = 1;
 int total              = 0;
 string comment         = "";
 string name            = "Ilan1.6";
-extern int rsi_max     = 60.0;
-extern int rsi_min     = 60.0;
-extern int rsi_period  = 17;
+extern int rsi_max     = 85;
+extern int rsi_min     = 30;
+extern int rsi_period  = 10;
 extern int dev_period  = 2;
-extern double exponent_base = 1.5;
-extern double takeprofit_ratio = 0.5;
+extern double exponent_base = 1.1;
+extern double takeprofit_ratio = 1;
 extern double lots     = 0.01;
 
 int init()
@@ -80,16 +80,17 @@ int start()
     }
     total = OrdersTotal();
 
+    int indicator_result = IndicatorSignal();
     if (total == 0)
     { /* All the actions that occur when a trade is signaled */
-        if (IndicatorSignal() == OP_BUY)
+        if (indicator_result == OP_BUY)
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
         }
-        else if (IndicatorSignal() == OP_SELL)
+        else if (indicator_result == OP_SELL)
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
@@ -97,9 +98,10 @@ int start()
             NewOrdersPlaced();
         }
     }
-    else if (short_trade && Bid > last_sell_price + pipstep * Point)
+    else if (short_trade && indicator_result == OP_SELL)
     {
-        if (IndicatorSignal() == OP_SELL)
+        pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+        if (Bid > last_sell_price + pipstep * Point)
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
@@ -107,9 +109,10 @@ int start()
             NewOrdersPlaced();
         }
     }
-    else if (long_trade && Ask < last_buy_price - pipstep * Point)
+    else if (long_trade && indicator_result == OP_BUY)
     {
-        if (IndicatorSignal() == OP_BUY)
+        pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+        if (Ask < last_buy_price - pipstep * Point)
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -123,7 +126,6 @@ int start()
 void Update()
 {
     total = OrdersTotal();
-    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     
     if (total == 0)
     { /* Reset */
@@ -230,11 +232,15 @@ void UpdateOpenOrders()
 }
 
 int IndicatorSignal()
-{
+{/*
     rsi = iRSI(NULL, NULL, rsi_period, PRICE_TYPICAL, 1);
+    double rsi_prev = iRSI(NULL, NULL, rsi_period, PRICE_TYPICAL, 2);*/
+    
+    rsi             = iMFI(NULL, NULL, rsi_period, 1);
+    double rsi_prev = iMFI(NULL, NULL, rsi_period, 2);
 
-    if (rsi > rsi_max) return OP_SELL;
-    if (rsi < rsi_min) return OP_BUY;
+    if (rsi > rsi_max && rsi_prev < rsi_max) return OP_SELL;
+    if (rsi < rsi_min && rsi_prev > rsi_min) return OP_BUY;
     return (-1);
 }
 /******************************************************************************
