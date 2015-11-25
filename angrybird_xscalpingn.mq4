@@ -205,7 +205,7 @@ void UpdateAveragePrice()
 
 void UpdateOpenOrders()
 {
-    for (int i = 0; i < total; i++)
+    for (int i = 0; i < CountTrades(); i++)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
@@ -224,17 +224,14 @@ void UpdateOpenOrders()
                 short_trade = TRUE;
                 long_trade  = FALSE;
             }
-            error = OrderModify(
-                OrderTicket(), NULL, 0, NormalizeDouble(price_target, Digits), 0, Yellow);
+            error = OrderModify(OrderTicket(), 0, 0,
+                    NormalizeDouble(price_target, Digits), 0, Yellow);     
         }
     }
 }
 
 int IndicatorSignal()
-{/*
-    rsi = iRSI(NULL, NULL, rsi_period, PRICE_TYPICAL, 1);
-    double rsi_prev = iRSI(NULL, NULL, rsi_period, PRICE_TYPICAL, 2);*/
-    
+{
     rsi             = iMFI(NULL, NULL, rsi_period, 1);
     double rsi_prev = iMFI(NULL, NULL, rsi_period, 2);
 
