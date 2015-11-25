@@ -56,6 +56,7 @@ int start()
     {
         for (int i = 0; i < total - 1; i++)
         {
+            if (Bid < average_price) break;
             error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
             if (OrderOpenPrice() > average_price && OrderProfit() >= OrderCommission() * -1)
             {
@@ -72,13 +73,13 @@ int start()
             error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
             if (OrderOpenPrice() < average_price && OrderProfit() >= OrderCommission() * -1)
             {
+                if (Ask > average_price) break;
                 error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrHotPink);
                 last_sell_price = FindLastSellPrice();
                 NewOrdersPlaced();
             }
         }
     }
-    total = OrdersTotal();
 
     int indicator_result = IndicatorSignal();
     if (total == 0)
@@ -100,7 +101,6 @@ int start()
     }
     else if (short_trade && indicator_result == OP_SELL)
     {
-        pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
         if (Bid > last_sell_price + pipstep * Point)
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
@@ -111,7 +111,6 @@ int start()
     }
     else if (long_trade && indicator_result == OP_BUY)
     {
-        pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
         if (Ask < last_buy_price - pipstep * Point)
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
@@ -126,6 +125,7 @@ int start()
 void Update()
 {
     total = OrdersTotal();
+    pipstep = 2 * iStdDev(NULL, 0, dev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     
     if (total == 0)
     { /* Reset */
@@ -156,7 +156,6 @@ void Update()
             tp_dist      = (last_buy_price - Ask) / Point;
             order_spread = (price_target - last_buy_price) / Point;
         }
-        name = AccountBalance() + "\n";
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
         Comment("Trade Distance: " + tp_dist + " Pipstep: " + pipstep +
@@ -181,6 +180,7 @@ void NewOrdersPlaced()
     delta          = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
     i_takeprofit =
         MathRound((commission / delta) + (all_lots * takeprofit_ratio / delta));
+    name = rsi + "\n";
         
     UpdateAveragePrice();
     UpdateOpenOrders();
@@ -225,8 +225,7 @@ void UpdateOpenOrders()
                 long_trade  = FALSE;
             }
             error = OrderModify(
-                OrderTicket(), NULL, NormalizeDouble(OrderStopLoss(), Digits),
-                NormalizeDouble(price_target, Digits), 0, Yellow);
+                OrderTicket(), NULL, 0, NormalizeDouble(price_target, Digits), 0, Yellow);
         }
     }
 }
