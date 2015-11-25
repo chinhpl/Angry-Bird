@@ -18,6 +18,7 @@ int pipstep            = 0;
 int previous_time      = 0;
 int slip               = 1;
 int total              = 0;
+int i_test             = 0;
 string comment         = "";
 string name            = "Ilan1.6";
 extern int rsi_max     = 85;
@@ -43,7 +44,11 @@ int init()
     return (0);
 }
 
-int deinit() { return (0); }
+int deinit()
+{
+    Print("Iterations: " + i_test);
+    return (0);
+}
 
 int start()
 { /* Sleeps until next bar opens if a trade is made */
@@ -56,14 +61,18 @@ int start()
     {
         for (int i = 0; i < total - 1; i++)
         {
-            if (Bid < average_price) break;
             error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
             if (OrderOpenPrice() > average_price && OrderProfit() >= OrderCommission() * -1)
             {
-                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrHotPink);
+                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrAzure);
                 last_buy_price = FindLastBuyPrice();
                 NewOrdersPlaced();
             }
+            else if (OrderOpenPrice() < average_price)
+            {
+                break;
+            }
+            i_test++;
         }
     }
     else if (short_trade && Ask < average_price)
@@ -73,10 +82,13 @@ int start()
             error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
             if (OrderOpenPrice() < average_price && OrderProfit() >= OrderCommission() * -1)
             {
-                if (Ask > average_price) break;
-                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrHotPink);
+                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrAzure);
                 last_sell_price = FindLastSellPrice();
                 NewOrdersPlaced();
+            }
+            else if (OrderOpenPrice() > average_price)
+            {
+                break;
             }
         }
     }
