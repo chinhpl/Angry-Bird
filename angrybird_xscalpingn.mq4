@@ -14,7 +14,7 @@ double rsi             = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
-int pipstep            = 200;
+int pipstep            = 0;
 int previous_time      = 0;
 int slip               = 1;
 int total              = 0;
@@ -26,7 +26,7 @@ extern int rsi_min     = 30;
 extern int rsi_period  = 8;
 extern int stddev_period  = 8;
 extern double exponent_base    = 1.2;
-double takeprofit_ratio = 1;
+extern double takeprofit_ratio = 1;
 extern double lots             = 0.01;
 
 int init()
@@ -40,6 +40,9 @@ int init()
         Update();
         NewOrdersPlaced();
     }
+    ObjectCreate("Average Price", OBJ_HLINE, 0, 0, average_price, 0, 0, 0, 0);
+    ObjectSet("Average Price", OBJPROP_COLOR, clrHotPink);
+    
     return (0);
 }
 
@@ -133,6 +136,8 @@ void Update()
         int time_difference = TimeCurrent() - Time[0];
         int tp_dist         = 0;
         double order_spread = 0;
+        ObjectSet("Average Price", OBJPROP_COLOR, clrHotPink);
+        
         if (short_trade)
         {
             tp_dist      = (Bid - last_sell_price) / Point;
@@ -159,14 +164,14 @@ void NewOrdersPlaced()
     }
     total           = OrdersTotal();
     lots_multiplier = MathPow(exponent_base, total);
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);/*
+    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     commission      = CalculateCommission() * -1;
     all_lots        = CalculateLots();
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
     i_takeprofit =
         MathRound((commission / delta) + (all_lots * takeprofit_ratio / delta));
 
-    UpdateAveragePrice();*/
+    UpdateAveragePrice();
     UpdateOpenOrders();
 }
 
@@ -199,7 +204,6 @@ void UpdateOpenOrders()
                                NormalizeDouble((i_takeprofit * Point), Digits);
                 short_trade = FALSE;
                 long_trade  = TRUE;
-                break;
             }
             else if (OrderType() == OP_SELL)
             {
@@ -207,11 +211,10 @@ void UpdateOpenOrders()
                                NormalizeDouble((i_takeprofit * Point), Digits);
                 short_trade = TRUE;
                 long_trade  = FALSE;
-                break;
             }
-            /*error =
+            error =
                 OrderModify(OrderTicket(), 0, 0,
-                            NormalizeDouble(price_target, Digits), 0, clrYellow);*/
+                            NormalizeDouble(price_target, Digits), 0, clrYellow);
         }
     }
 }
