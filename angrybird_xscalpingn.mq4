@@ -129,6 +129,7 @@ int start()
     else if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
+        Update();
         error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
         last_buy_price = Ask;
@@ -137,6 +138,7 @@ int start()
     else if (long_trade && indicator_result == OP_SELL && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
+        Update();
         error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
         last_sell_price = Bid;
@@ -165,6 +167,13 @@ void Update()
         i_lots          = lots;
     } else
     {
+        total = OrdersTotal();
+        lots_multiplier = MathPow(exponent_base, total);
+        i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+        commission      = CalculateCommission() * -1;
+        all_lots        = CalculateLots();
+        delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
+        i_takeprofit = MathRound((commission / delta) + (pipstep));
     }
 
     if (!IsOptimization())
@@ -198,15 +207,8 @@ void NewOrdersPlaced()
                           Ask, slip, 0, 0, name, magic_number, 0, 0);
         ExpertRemove();
     }
-    total = OrdersTotal();
-    lots_multiplier = MathPow(exponent_base, total);
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    commission      = CalculateCommission() * -1;
-    all_lots        = CalculateLots();
-    delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit =
-        MathRound((commission / delta) + (iStdDev(0, 0, 20, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point));
 
+    Update();
     UpdateAveragePrice();
     UpdateOpenOrders();
 }
