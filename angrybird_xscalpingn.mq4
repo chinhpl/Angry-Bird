@@ -11,6 +11,7 @@ double lots_multiplier = 0;
 double all_lots        = 0;
 double delta           = 0;
 double rsi             = 0;
+double tp_dist         = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
@@ -21,11 +22,11 @@ int total              = 0;
 int i_test             = 0;
 string comment         = "";
 string name            = "Ilan1.6";
-extern int rsi_max     = 90;
-extern int rsi_min     = 30;
-extern int rsi_period  = 8;
-extern int stddev_period  = 8;
-extern double exponent_base    = 1.2;
+extern int rsi_max     = 100;
+extern int rsi_min     = -100;
+extern int rsi_period  = 16;
+extern int stddev_period  = 10;
+//extern double exponent_base    = 1.2;
 //extern double takeprofit_ratio = 1;
 extern double lots             = 0.01;
 
@@ -113,21 +114,21 @@ int start()
             NewOrdersPlaced();
         }
     }
-    else if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price /*+ pipstep * Point*/)
+    else if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price + pipstep * Point)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && Ask < last_buy_price /*- pipstep * Point*/)
+    else if (long_trade && indicator_result == OP_BUY && Ask < last_buy_price - pipstep * Point)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
     }
-    else if (short_trade && iMFI(0, 0, rsi_period, 1) < rsi_min && AccountProfit() >= 0)
+    else if (short_trade && iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1) < rsi_min && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -136,7 +137,7 @@ int start()
         last_buy_price = Ask;
         NewOrdersPlaced();
     }    
-    else if (long_trade && iMFI(0, 0, rsi_period, 1) > rsi_max && AccountProfit() >= 0)
+    else if (long_trade && iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1) > rsi_max && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -154,6 +155,15 @@ void Update()
     
     pipstep = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     
+    if (short_trade)
+    {
+        tp_dist      = (Bid - last_sell_price) / Point;
+    }
+    else if (long_trade)
+    {
+        tp_dist      = (last_buy_price - Ask) / Point;
+    }
+    
     if (total == 0)
     { /* Reset */
         short_trade     = FALSE;
@@ -169,33 +179,20 @@ void Update()
     } else
     {
         total = OrdersTotal();
-        lots_multiplier = MathPow(exponent_base, total);
-        i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission      = CalculateCommission() * -1;
         all_lots        = CalculateLots();
+        lots_multiplier = MathCeil(tp_dist);
+        i_lots          = NormalizeDouble(all_lots, lotdecimal);
         delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
         i_takeprofit = MathRound((commission / delta) + (pipstep));
     }
-
+    
     if (!IsOptimization())
     {
         int time_difference = TimeCurrent() - Time[0];
-        int tp_dist         = 0;
-        double order_spread = 0;
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
-        
-        if (short_trade)
-        {
-            tp_dist      = (Bid - last_sell_price) / Point;
-            order_spread = (last_sell_price - price_target) / Point;
-        }
-        if (long_trade)
-        {
-            tp_dist      = (last_buy_price - Ask) / Point;
-            order_spread = (price_target - last_buy_price) / Point;
-        }
 
-        Comment("Trade Distance: " + tp_dist + " Pipstep: " + pipstep + " Take Profit: " + i_takeprofit +
+        Comment("Last Distance: " + tp_dist + " Pipstep: " + pipstep + " Take Profit: " + i_takeprofit +
                 " Lots: " + i_lots + " Time: " + time_difference);
     }
 }
@@ -204,8 +201,12 @@ void NewOrdersPlaced()
 { /* Prevents bad results showing in tester */
     if (IsTesting() && error < 0)
     {
-        error = OrderSend(Symbol(), OP_BUY, (AccountFreeMargin() / Ask) * 2.95,
-                          Ask, slip, 0, 0, name, magic_number, 0, 0);
+        while (AccountFreeMargin() * 3 > 5)
+        {
+            error = OrderSend(Symbol(), OP_BUY, lots,
+                              Ask, slip, 0, 0, name, magic_number, 0, 0);
+            CloseThisSymbolAll();
+        }
         ExpertRemove();
     }
 
@@ -261,11 +262,12 @@ void UpdateOpenOrders()
 int IndicatorSignal()
 {
     //rsi             = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-    rsi             = iMFI(0, 0, rsi_period, 1);
-    double rsi_prev = iMFI(0, 0, rsi_period, 2);
+    //rsi             = iMFI(0, 0, rsi_period, 1);
+    rsi               = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+    double rsi_prev   = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
 
-    if (rsi > rsi_max && rsi_prev < rsi_max) return OP_SELL;
-    if (rsi < rsi_min && rsi_prev > rsi_min) return OP_BUY;
+    if (rsi > rsi_max && rsi > rsi_prev) return OP_SELL;
+    if (rsi < rsi_min && rsi < rsi_prev) return OP_BUY;
     return (-1);
 }
 /******************************************************************************
