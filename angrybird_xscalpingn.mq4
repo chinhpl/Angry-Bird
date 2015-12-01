@@ -16,7 +16,7 @@ int lotdecimal         = 2;
 int magic_number       = 2222;
 int pipstep            = 0;
 int previous_time      = 0;
-int slip               = 1;
+int slip               = 0;
 int total              = 0;
 int i_test             = 0;
 string comment         = "";
@@ -57,6 +57,7 @@ int start()
     if (previous_time == Time[0]) return (0);
     previous_time = Time[0];
     Update();
+    UpdateOpenOrders();
     
     if (long_trade && Bid > average_price)
     {
@@ -112,21 +113,21 @@ int start()
             NewOrdersPlaced();
         }
     }
-    else if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price + pipstep * Point)
+    else if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price /*+ pipstep * Point*/)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && Ask < last_buy_price - pipstep * Point)
+    else if (long_trade && indicator_result == OP_BUY && Ask < last_buy_price /*- pipstep * Point*/)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
     }
-    else if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
+    else if (short_trade && iMFI(0, 0, rsi_period, 1) < rsi_min && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -135,7 +136,7 @@ int start()
         last_buy_price = Ask;
         NewOrdersPlaced();
     }    
-    else if (long_trade && indicator_result == OP_SELL && AccountProfit() >= 0)
+    else if (long_trade && iMFI(0, 0, rsi_period, 1) > rsi_max && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -259,11 +260,12 @@ void UpdateOpenOrders()
 
 int IndicatorSignal()
 {
-    rsi             = iMFI(NULL, NULL, rsi_period, 1);
-    double rsi_prev = iMFI(NULL, NULL, rsi_period, 2);
+    //rsi             = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+    rsi             = iMFI(0, 0, rsi_period, 1);
+    double rsi_prev = iMFI(0, 0, rsi_period, 2);
 
-    if (rsi > rsi_max) return OP_SELL;
-    if (rsi < rsi_min) return OP_BUY;
+    if (rsi > rsi_max && rsi_prev < rsi_max) return OP_SELL;
+    if (rsi < rsi_min && rsi_prev > rsi_min) return OP_BUY;
     return (-1);
 }
 /******************************************************************************
@@ -290,9 +292,9 @@ void CloseThisSymbolAll()
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
             if (OrderType() == OP_BUY)
-                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, Blue);
+                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
             if (OrderType() == OP_SELL)
-                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, Red);
+                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
         }
     }
 }
