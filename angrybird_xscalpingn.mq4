@@ -1,3 +1,9 @@
+enum I_SIG
+{
+    RSI, MFI, CCI
+};
+
+
 bool long_trade        = FALSE;
 bool short_trade       = FALSE;
 double average_price   = 0;
@@ -22,13 +28,14 @@ int total              = 0;
 int i_test             = 0;
 string comment         = "";
 string name            = "Ilan1.6";
-extern int rsi_max     = 100;
-extern int rsi_min     = -100;
+extern int rsi_max     = 75;
+extern int rsi_min     = 40;
 extern int rsi_period  = 14;
-extern int stddev_period  = 10;
+extern int stddev_period = 10;
 extern double lots_div = 2;
-//extern double takeprofit_ratio = 1;
 extern double lots             = 0.01;
+extern I_SIG indicator = 1;
+
 
 int init()
 {
@@ -261,11 +268,29 @@ void UpdateOpenOrders()
 
 int IndicatorSignal()
 {
-    //rsi             = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-    //rsi             = iMFI(0, 0, rsi_period, 1);
-    //rsi             = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-    rsi               = iMFI(0, 0, rsi_period, 1);
-    double rsi_prev   = iMFI(0, 0, rsi_period, 2);
+    double rsi_prev = 0;
+    
+    switch (indicator)
+    {
+        case RSI:
+        {
+            rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+            rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            break;
+        }
+        case MFI:
+        {
+            rsi      = iMFI(0, 0, rsi_period, 1);
+            rsi_prev = iMFI(0, 0, rsi_period, 2);
+            break;
+        }
+        case CCI:
+        {
+            rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+            rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            break;
+        }
+    }
 
     if (rsi > rsi_max && rsi > rsi_prev) return OP_SELL;
     if (rsi < rsi_min && rsi < rsi_prev) return OP_BUY;
