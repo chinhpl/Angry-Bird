@@ -24,9 +24,9 @@ string comment         = "";
 string name            = "Ilan1.6";
 extern int rsi_max     = 100;
 extern int rsi_min     = -100;
-extern int rsi_period  = 16;
+extern int rsi_period  = 14;
 extern int stddev_period  = 10;
-//extern double exponent_base    = 1.2;
+extern double lots_div = 2;
 //extern double takeprofit_ratio = 1;
 extern double lots             = 0.01;
 
@@ -128,7 +128,7 @@ int start()
             last_buy_price = Ask;
             NewOrdersPlaced();
     }
-    else if (short_trade && iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1) < rsi_min && AccountProfit() >= 0)
+    else if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -137,7 +137,7 @@ int start()
         last_buy_price = Ask;
         NewOrdersPlaced();
     }    
-    else if (long_trade && iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1) > rsi_max && AccountProfit() >= 0)
+    else if (long_trade && indicator_result == OP_SELL && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         Update();
@@ -153,7 +153,7 @@ void Update()
 {
     total = OrdersTotal();
     
-    pipstep = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
+    pipstep = iStdDev(0, 0, rsi_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
     
     if (short_trade)
     {
@@ -182,9 +182,9 @@ void Update()
         commission      = CalculateCommission() * -1;
         all_lots        = CalculateLots();
         lots_multiplier = MathCeil(tp_dist);
-        i_lots          = NormalizeDouble(all_lots, lotdecimal);
+        i_lots          = NormalizeDouble(all_lots / lots_div, lotdecimal);
         delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound((commission / delta) + (pipstep));
+        i_takeprofit = MathRound((commission / delta) + (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point));
     }
     
     if (!IsOptimization())
@@ -201,9 +201,9 @@ void NewOrdersPlaced()
 { /* Prevents bad results showing in tester */
     if (IsTesting() && error < 0)
     {
-        while (AccountFreeMargin() * 3 > 5)
+        while (AccountBalance() > 20)
         {
-            error = OrderSend(Symbol(), OP_BUY, lots,
+            error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Bid,
                               Ask, slip, 0, 0, name, magic_number, 0, 0);
             CloseThisSymbolAll();
         }
@@ -263,8 +263,9 @@ int IndicatorSignal()
 {
     //rsi             = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
     //rsi             = iMFI(0, 0, rsi_period, 1);
-    rsi               = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-    double rsi_prev   = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+    //rsi             = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+    rsi               = iMFI(0, 0, rsi_period, 1);
+    double rsi_prev   = iMFI(0, 0, rsi_period, 2);
 
     if (rsi > rsi_max && rsi > rsi_prev) return OP_SELL;
     if (rsi < rsi_min && rsi < rsi_prev) return OP_BUY;
