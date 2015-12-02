@@ -18,6 +18,8 @@ double all_lots        = 0;
 double delta           = 0;
 double rsi             = 0;
 double tp_dist         = 0;
+double rsi_prev = 0;
+double rsi_mid     = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
@@ -31,7 +33,7 @@ string name            = "Ilan1.6";
 extern int rsi_max     = 75;
 extern int rsi_min     = 40;
 extern int rsi_period  = 14;
-extern int stddev_period = 10;
+//extern int stddev_period = 10;
 extern double lots_div = 2;
 extern double lots             = 0.01;
 extern I_SIG indicator = 1;
@@ -39,7 +41,12 @@ extern I_SIG indicator = 1;
 
 int init()
 {
-    if (rsi_min > rsi_max) ExpertRemove();
+    if (IsTesting())
+    {
+        if (rsi_min > rsi_max) ExpertRemove();
+        if (rsi_max > 100 && indicator != CCI) ExpertRemove();
+        if (rsi_min < 0   && indicator != CCI) ExpertRemove();
+    }
     total = OrdersTotal();
     if (total)
     {
@@ -102,7 +109,7 @@ int start()
         }
     }
     
-    int indicator_result = IndicatorSignal();
+    double indicator_result = IndicatorSignal();
     
     if (total == 0)
     { /* All the actions that occur when a trade is signaled */
@@ -153,6 +160,16 @@ int start()
         last_sell_price = Bid;
         NewOrdersPlaced();
     }
+    else if (short_trade && indicator_result == -500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        Update();
+    }
+    else if (long_trade && indicator_result == 500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        Update();
+    }
     return (0);
 }
 
@@ -191,7 +208,7 @@ void Update()
         lots_multiplier = MathCeil(tp_dist);
         i_lots          = NormalizeDouble(all_lots / lots_div, lotdecimal);
         delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound((commission / delta) + (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point));
+        i_takeprofit = MathRound((commission / delta) + (pipstep));
     }
     
     if (!IsOptimization())
@@ -266,34 +283,37 @@ void UpdateOpenOrders()
     }
 }
 
-int IndicatorSignal()
-{
-    double rsi_prev = 0;
-    
+double IndicatorSignal()
+{    
     switch (indicator)
     {
         case RSI:
         {
             rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            rsi_mid  = 50;
             break;
         }
         case MFI:
         {
             rsi      = iMFI(0, 0, rsi_period, 1);
             rsi_prev = iMFI(0, 0, rsi_period, 2);
+            rsi_mid  = 50;
             break;
         }
         case CCI:
         {
             rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            rsi_mid  = 0;
             break;
         }
     }
 
-    if (rsi > rsi_max && rsi > rsi_prev) return OP_SELL;
-    if (rsi < rsi_min && rsi < rsi_prev) return OP_BUY;
+    if (rsi > rsi_max)  return OP_SELL;
+    if (rsi < rsi_min)  return OP_BUY;
+    if (rsi < rsi_mid) return -500;
+    if (rsi > rsi_mid) return  500;
     return (-1);
 }
 /******************************************************************************
