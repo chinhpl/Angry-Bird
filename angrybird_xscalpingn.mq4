@@ -30,13 +30,15 @@ int total              = 0;
 int i_test             = 0;
 string comment         = "";
 string name            = "Ilan1.6";
-extern int rsi_max     = 75;
-extern int rsi_min     = 40;
+extern int rsi_max     = 200;
+extern int rsi_min     = -100;
 extern int rsi_period  = 14;
-//extern int stddev_period = 10;
-extern double lots_div = 2;
+extern int stddev_period = 14;
+extern double exp_base = 1.7;
 extern double lots             = 0.01;
-extern I_SIG indicator = 1;
+extern I_SIG indicator = 2;
+uint time_start = GetTickCount();
+uint time_elapsed = 0;
 
 
 int init()
@@ -62,7 +64,8 @@ int init()
 
 int deinit()
 {
-    Print("Iterations: " + i_test);
+    time_elapsed = GetTickCount() - time_start;
+    Print("Time Elapsed: " + time_elapsed);
     return (0);
 }
 
@@ -72,7 +75,40 @@ int start()
     if (previous_time == Time[0]) return (0);
     previous_time = Time[0];
     Update();
-    UpdateOpenOrders();
+    
+    double indicator_result = IndicatorSignal();
+    
+    /* Cancels */
+    if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        Update();
+        error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+        last_buy_price = Ask;
+        NewOrdersPlaced();
+        return 0;
+    }    
+    else if (long_trade && indicator_result == OP_SELL && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        Update();
+        error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                              magic_number, 0, clrHotPink);
+        last_sell_price = Bid;
+        NewOrdersPlaced();
+        return 0;
+    }
+    else if (short_trade && indicator_result == -500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        return 0;
+    }
+    else if (long_trade && indicator_result == 500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        return 0;
+    }
     
     if (long_trade && Bid > average_price)
     {
@@ -82,7 +118,6 @@ int start()
             if (OrderOpenPrice() > average_price && OrderProfit() >= OrderCommission() * -1)
             {
                 error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-                last_buy_price = FindLastBuyPrice();
                 NewOrdersPlaced();
             }
             else if (OrderOpenPrice() < average_price)
@@ -90,6 +125,8 @@ int start()
                 break;
             }
         }
+        last_buy_price = FindLastBuyPrice();
+        return 0;
     }
     else if (short_trade && Ask < average_price)
     {
@@ -99,7 +136,6 @@ int start()
             if (OrderOpenPrice() < average_price && OrderProfit() >= OrderCommission() * -1)
             {
                 error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
-                last_sell_price = FindLastSellPrice();
                 NewOrdersPlaced();
             }
             else if (OrderOpenPrice() > average_price)
@@ -107,12 +143,13 @@ int start()
                 break;
             }
         }
+        last_sell_price = FindLastSellPrice();
+        return 0;
     }
     
-    double indicator_result = IndicatorSignal();
-    
+    /* All the actions that occur when a trade is signaled */
     if (total == 0)
-    { /* All the actions that occur when a trade is signaled */
+    {
         if (indicator_result == OP_BUY)
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
@@ -142,34 +179,6 @@ int start()
             last_buy_price = Ask;
             NewOrdersPlaced();
     }
-    else if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        Update();
-        error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                              magic_number, 0, clrLimeGreen);
-        last_buy_price = Ask;
-        NewOrdersPlaced();
-    }    
-    else if (long_trade && indicator_result == OP_SELL && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        Update();
-        error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                              magic_number, 0, clrHotPink);
-        last_sell_price = Bid;
-        NewOrdersPlaced();
-    }
-    else if (short_trade && indicator_result == -500 && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        Update();
-    }
-    else if (long_trade && indicator_result == 500 && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        Update();
-    }
     return (0);
 }
 
@@ -177,17 +186,7 @@ void Update()
 {
     total = OrdersTotal();
     
-    pipstep = iStdDev(0, 0, rsi_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point;
-    
-    if (short_trade)
-    {
-        tp_dist      = (Bid - last_sell_price) / Point;
-    }
-    else if (long_trade)
-    {
-        tp_dist      = (last_buy_price - Ask) / Point;
-    }
-    
+    pipstep = (1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0)) / Point;    
     if (total == 0)
     { /* Reset */
         short_trade     = FALSE;
@@ -200,19 +199,19 @@ void Update()
         last_buy_price  = 0;
         last_sell_price = 0;
         i_lots          = lots;
-    } else
-    {
-        total = OrdersTotal();
-        commission      = CalculateCommission() * -1;
-        all_lots        = CalculateLots();
-        lots_multiplier = MathCeil(tp_dist);
-        i_lots          = NormalizeDouble(all_lots / lots_div, lotdecimal);
-        delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound((commission / delta) + (pipstep));
     }
     
     if (!IsOptimization())
     {
+        if (short_trade)
+        {
+            tp_dist      = (Bid - last_sell_price) / Point;
+        }
+        else if (long_trade)
+        {
+            tp_dist      = (last_buy_price - Ask) / Point;
+        }
+        
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
@@ -233,8 +232,14 @@ void NewOrdersPlaced()
         }
         ExpertRemove();
     }
-
-    Update();
+    total = OrdersTotal();
+    commission      = CalculateCommission() * -1;
+    all_lots        = CalculateLots();
+    lots_multiplier = MathPow(exp_base, OrdersTotal());
+    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+    delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
+    i_takeprofit = MathRound((commission / delta) + (all_lots / delta));
+    
     UpdateAveragePrice();
     UpdateOpenOrders();
 }
@@ -248,8 +253,8 @@ void UpdateAveragePrice()
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
-            average_price += OrderOpenPrice() * OrderLots();
-            count += OrderLots();
+            average_price += OrderOpenPrice() * (OrderLots() / OrderCommission());
+            count += (OrderLots() / OrderCommission());
         }
     }
     average_price = NormalizeDouble(average_price / count, Digits);
