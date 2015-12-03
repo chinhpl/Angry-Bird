@@ -78,6 +78,26 @@ int start()
     
     double indicator_result = IndicatorSignal();
     
+    /* First */
+    if (total == 0)
+    {
+        if (indicator_result == OP_BUY)
+        {
+            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
+            NewOrdersPlaced();
+        }
+        else if (indicator_result == OP_SELL)
+        {
+            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                              magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
+            NewOrdersPlaced();
+        }
+        return 0;
+    }
+    
     /* Cancels */
     if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
     {
@@ -147,25 +167,8 @@ int start()
         return 0;
     }
     
-    /* All the actions that occur when a trade is signaled */
-    if (total == 0)
-    {
-        if (indicator_result == OP_BUY)
-        {
-            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                              magic_number, 0, clrLimeGreen);
-            last_buy_price = Ask;
-            NewOrdersPlaced();
-        }
-        else if (indicator_result == OP_SELL)
-        {
-            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                              magic_number, 0, clrHotPink);
-            last_sell_price = Bid;
-            NewOrdersPlaced();
-        }
-    }
-    else if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price + pipstep * Point)
+    /* Proceeding Trades */
+    if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price + pipstep * Point)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
