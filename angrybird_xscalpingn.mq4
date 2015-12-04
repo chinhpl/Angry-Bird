@@ -189,7 +189,7 @@ void Update()
 {
     total = OrdersTotal();
     
-    pipstep = (1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0)) / Point;    
+    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0)) / Point;    
     if (total == 0)
     { /* Reset */
         short_trade     = FALSE;
@@ -243,7 +243,7 @@ void NewOrdersPlaced()
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound((commission / delta) + (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point));
+    i_takeprofit = MathRound((commission / delta) + (pipstep));
     
     UpdateAveragePrice();
     UpdateOpenOrders();
