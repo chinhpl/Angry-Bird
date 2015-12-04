@@ -215,6 +215,8 @@ void Update()
             tp_dist      = (last_buy_price - Ask) / Point;
         }
         
+        name = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+        
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
@@ -241,7 +243,7 @@ void NewOrdersPlaced()
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound((commission / delta) + (all_lots / delta));
+    i_takeprofit = MathRound((commission / delta) + (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point));
     
     UpdateAveragePrice();
     UpdateOpenOrders();
@@ -256,8 +258,8 @@ void UpdateAveragePrice()
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
-            average_price += OrderOpenPrice() * (OrderLots() / OrderCommission());
-            count += (OrderLots() / OrderCommission());
+            average_price += OrderOpenPrice() * (OrderLots());
+            count += (OrderLots());
         }
     }
     average_price = NormalizeDouble(average_price / count, Digits);
@@ -299,21 +301,21 @@ double IndicatorSignal()
         {
             rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-            rsi_mid  = 50;
+            rsi_mid = rsi_max - rsi_min;
             break;
         }
         case MFI:
         {
             rsi      = iMFI(0, 0, rsi_period, 1);
             rsi_prev = iMFI(0, 0, rsi_period, 2);
-            rsi_mid  = 50;
+            rsi_mid = rsi_max - rsi_min;
             break;
         }
         case CCI:
         {
             rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-            rsi_mid  = 0;
+            rsi_mid = rsi_min + rsi_max;
             break;
         }
     }
