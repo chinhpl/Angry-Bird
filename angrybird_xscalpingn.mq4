@@ -95,10 +95,24 @@ int start()
             last_sell_price = Bid;
             NewOrdersPlaced();
         }
+        else if (indicator_result == 500)
+        {
+            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
+            NewOrdersPlaced();
+        }
+        else if (indicator_result == -500)
+        {
+            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                              magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
+            NewOrdersPlaced();
+        }
         return 0;
     }
     
-    /* Cancels */
+    /* Cancels - Reversal */
     if (short_trade && indicator_result == OP_BUY && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
@@ -119,17 +133,8 @@ int start()
         NewOrdersPlaced();
         return 0;
     }
-    else if (short_trade && indicator_result == -500 && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        return 0;
-    }
-    else if (long_trade && indicator_result == 500 && AccountProfit() >= 0)
-    {
-        CloseThisSymbolAll();
-        return 0;
-    }
     
+    /* Cancels - Intertrade */
     if (long_trade && Bid > average_price)
     {
         for (int i = 0; i < total - 1; i++)
@@ -189,7 +194,17 @@ void Update()
 {
     total = OrdersTotal();
     
-    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0)) / Point;    
+    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point);   
+    
+    if (short_trade)
+    {
+        tp_dist      = (Bid - average_price) / Point;
+    }
+    else if (long_trade)
+    {
+        tp_dist      = (average_price - Ask) / Point;
+    } 
+    
     if (total == 0)
     { /* Reset */
         short_trade     = FALSE;
@@ -203,18 +218,14 @@ void Update()
         last_sell_price = 0;
         i_lots          = lots;
     }
+    else
+    {
+        lots_multiplier = MathPow(exp_base, (tp_dist * Point));
+        i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+    }
     
     if (!IsOptimization())
-    {
-        if (short_trade)
-        {
-            tp_dist      = (Bid - last_sell_price) / Point;
-        }
-        else if (long_trade)
-        {
-            tp_dist      = (last_buy_price - Ask) / Point;
-        }
-        
+    {        
         name = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
         
         int time_difference = TimeCurrent() - Time[0];
@@ -240,10 +251,8 @@ void NewOrdersPlaced()
     total = OrdersTotal();
     commission      = CalculateCommission() * -1;
     all_lots        = CalculateLots();
-    lots_multiplier = MathPow(exp_base, OrdersTotal());
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound((commission / delta) + (pipstep));
+    i_takeprofit = MathRound((commission / delta) + (pipstep / 2));
     
     UpdateAveragePrice();
     UpdateOpenOrders();
@@ -301,27 +310,28 @@ double IndicatorSignal()
         {
             rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-            rsi_mid = rsi_max - rsi_min;
+            rsi_mid = 50;
             break;
         }
         case MFI:
         {
             rsi      = iMFI(0, 0, rsi_period, 1);
             rsi_prev = iMFI(0, 0, rsi_period, 2);
-            rsi_mid = rsi_max - rsi_min;
+            rsi_mid = 50;
             break;
         }
         case CCI:
         {
             rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-            rsi_mid = rsi_min + rsi_max;
+            rsi_mid = 0;
             break;
         }
     }
+    //rsi_mid = (rsi_max + rsi_min) / 2;
 
-    if (rsi > rsi_max)  return OP_SELL;
-    if (rsi < rsi_min)  return OP_BUY;
+    if (rsi > rsi_max/* && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)*/)  return OP_SELL;
+    if (rsi < rsi_min/* && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1)*/)  return OP_BUY;
     if (rsi < rsi_mid) return -500;
     if (rsi > rsi_mid) return  500;
     return (-1);
