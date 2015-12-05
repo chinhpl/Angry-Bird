@@ -94,7 +94,7 @@ int start()
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
-        }
+        }/*
         else if (Ask < iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_UPPER, 1) &&
                  Ask > iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_MAIN,  1))
         {
@@ -110,7 +110,7 @@ int start()
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
-        }
+        }*/
         return 0;
     }
     
