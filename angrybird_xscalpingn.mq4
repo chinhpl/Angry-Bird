@@ -95,14 +95,14 @@ int start()
             last_sell_price = Bid;
             NewOrdersPlaced();
         }
-        else if (indicator_result == 500)
+        else if (indicator_result == 500 && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1))
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
         }
-        else if (indicator_result == -500)
+        else if (indicator_result == -500 && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1))
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
@@ -330,8 +330,8 @@ double IndicatorSignal()
     }
     //rsi_mid = (rsi_max + rsi_min) / 2;
 
-    if (rsi > rsi_max/* && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)*/)  return OP_SELL;
-    if (rsi < rsi_min/* && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1)*/)  return OP_BUY;
+    if (rsi > rsi_max)  return OP_SELL;
+    if (rsi < rsi_min)  return OP_BUY;
     if (rsi < rsi_mid) return -500;
     if (rsi > rsi_mid) return  500;
     return (-1);
