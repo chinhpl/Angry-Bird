@@ -216,7 +216,7 @@ void Update()
     }
     else
     {
-        lots_multiplier = MathPow(exp_base, (tp_dist * Point) / (pipstep * Point));
+        lots_multiplier = MathPow(exp_base, OrdersTotal());
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     }
     
@@ -326,8 +326,8 @@ double IndicatorSignal()
     }
     //rsi_mid = (rsi_max + rsi_min) / 2;
 
-    if (rsi > rsi_max)  return OP_SELL;
-    if (rsi < rsi_min)  return OP_BUY;
+    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1))  return OP_SELL;
+    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1))  return OP_BUY;
     if (rsi < rsi_mid) return -500;
     if (rsi > rsi_mid) return  500;
     return (-1);
