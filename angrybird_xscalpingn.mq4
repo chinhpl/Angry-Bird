@@ -94,23 +94,7 @@ int start()
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
-        }/*
-        else if (Ask < iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_UPPER, 1) &&
-                 Ask > iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_MAIN,  1))
-        {
-            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                              magic_number, 0, clrLimeGreen);
-            last_buy_price = Ask;
-            NewOrdersPlaced();
         }
-        else if (Bid > iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_LOWER, 1) &&
-                 Bid < iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_MAIN,  1))
-        {
-            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                              magic_number, 0, clrHotPink);
-            last_sell_price = Bid;
-            NewOrdersPlaced();
-        }*/
         return 0;
     }
     
@@ -232,7 +216,7 @@ void Update()
     }
     else
     {
-        lots_multiplier = MathPow(exp_base, tp_dist * Point);
+        lots_multiplier = MathPow(exp_base, (tp_dist * Point) / (pipstep * Point));
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     }
     
@@ -264,7 +248,7 @@ void NewOrdersPlaced()
     commission      = CalculateCommission() * -1;
     all_lots        = CalculateLots();
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound((commission / delta) + (pipstep / 2));
+    i_takeprofit = MathRound((commission / delta) + (pipstep));
     
     UpdateAveragePrice();
     UpdateOpenOrders();
