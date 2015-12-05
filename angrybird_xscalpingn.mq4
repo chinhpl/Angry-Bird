@@ -95,14 +95,16 @@ int start()
             last_sell_price = Bid;
             NewOrdersPlaced();
         }
-        else if (indicator_result == 500 && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1))
+        else if (Ask < iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_UPPER, 1) &&
+                 Ask > iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_MAIN,  1))
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
         }
-        else if (indicator_result == -500 && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1))
+        else if (Bid > iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_LOWER, 1) &&
+                 Bid < iBands(0, 0, rsi_period, 0.5, 0, PRICE_TYPICAL, MODE_MAIN,  1))
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
@@ -131,6 +133,16 @@ int start()
                               magic_number, 0, clrHotPink);
         last_sell_price = Bid;
         NewOrdersPlaced();
+        return 0;
+    }
+    else if (short_trade && indicator_result == -500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
+        return 0;
+    }
+    else if (long_trade && indicator_result == 500 && AccountProfit() >= 0)
+    {
+        CloseThisSymbolAll();
         return 0;
     }
     
@@ -220,7 +232,7 @@ void Update()
     }
     else
     {
-        lots_multiplier = MathPow(exp_base, (tp_dist * Point));
+        lots_multiplier = MathPow(exp_base, tp_dist * Point);
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
     }
     
