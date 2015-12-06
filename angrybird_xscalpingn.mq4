@@ -77,7 +77,6 @@ int start()
     Update();
     
     double indicator_result = IndicatorSignal();
-    double moving_average   = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
     
     /*** First ***/
     if (total == 0)
@@ -132,14 +131,14 @@ int start()
     }
     
     /*** Proceeding Trades ***/
-    if (short_trade && indicator_result == OP_SELL && moving_average > last_sell_price)
+    if (short_trade && indicator_result == OP_SELL && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1) > last_sell_price)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && moving_average < last_buy_price)
+    else if (long_trade && indicator_result == OP_BUY && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1) < last_buy_price)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
