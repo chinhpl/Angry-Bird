@@ -169,14 +169,14 @@ int start()
     }
     
     /* Proceeding Trades */
-    if (short_trade && indicator_result == OP_SELL && Bid > last_sell_price + pipstep * Point)
+    if (short_trade && indicator_result == OP_SELL && iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1) > last_sell_price)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && Ask < last_buy_price - pipstep * Point)
+    else if (long_trade && indicator_result == OP_BUY && iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1) < last_buy_price)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -326,8 +326,8 @@ double IndicatorSignal()
     }
     //rsi_mid = (rsi_max + rsi_min) / 2;
 
-    if (rsi > rsi_max/* && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)*/)  return OP_SELL;
-    if (rsi < rsi_min/* && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1)*/)  return OP_BUY;
+    if (rsi > rsi_max)  return OP_SELL;
+    if (rsi < rsi_min)   return OP_BUY;
     if (rsi < rsi_mid) return -500;
     if (rsi > rsi_mid) return  500;
     return (-1);
