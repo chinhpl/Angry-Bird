@@ -94,7 +94,25 @@ int start()
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
+        }/*
+        else if (Bid < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1) &&
+                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) <
+                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  2))
+        {
+            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                              magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
+            NewOrdersPlaced();
         }
+        else if (Ask > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1) &&
+                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) >
+                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  2))
+        {
+            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
+            NewOrdersPlaced();
+        }*/
         return 0;
     }
     
@@ -119,12 +137,12 @@ int start()
         NewOrdersPlaced();
         return 0;
     }
-    else if (short_trade && Ask < iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1) && AccountProfit() >= 0)
+    else if (short_trade && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
     }
-    else if (long_trade && Bid > iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1) && AccountProfit() >= 0)
+    else if (long_trade && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
@@ -152,7 +170,7 @@ void Update()
 {
     total = OrdersTotal();
     
-    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point);   
+    pipstep = 1 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point);   
     
     if (short_trade)
     {
@@ -268,23 +286,28 @@ double IndicatorSignal()
         {
             rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            rsi_mid = 50;
             break;
         }
         case MFI:
         {
             rsi      = iMFI(0, 0, rsi_period, 1);
             rsi_prev = iMFI(0, 0, rsi_period, 2);
+            rsi_mid = 50;
             break;
         }
         case CCI:
         {
             rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
             rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+            rsi_mid = 0;
             break;
         }
     }
-    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)) return OP_SELL;
-    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1)) return OP_BUY;
+    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1)) return OP_SELL;
+    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1)) return OP_BUY;
+    if (rsi > rsi_mid) return 500;
+    if (rsi < rsi_mid) return -500;
     return (-1);
 }
 /******************************************************************************
