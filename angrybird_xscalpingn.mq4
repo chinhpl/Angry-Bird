@@ -94,25 +94,7 @@ int start()
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
-        }/*
-        else if (Bid < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1) &&
-                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) <
-                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  2))
-        {
-            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                              magic_number, 0, clrHotPink);
-            last_sell_price = Bid;
-            NewOrdersPlaced();
         }
-        else if (Ask > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1) &&
-                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1) >
-                       iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  2))
-        {
-            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                              magic_number, 0, clrLimeGreen);
-            last_buy_price = Ask;
-            NewOrdersPlaced();
-        }*/
         return 0;
     }
     
@@ -137,26 +119,26 @@ int start()
         NewOrdersPlaced();
         return 0;
     }
-    else if (short_trade && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_MAIN,  1) && AccountProfit() >= 0)
+    else if (short_trade && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1) && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
     }
-    else if (long_trade && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_MAIN,  1) && AccountProfit() >= 0)
+    else if (long_trade && Bid >  iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)&& AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
     }
     
     /*** Proceeding Trades ***/
-    if (short_trade && indicator_result == OP_SELL && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_MAIN, 1) > last_sell_price)
+    if (short_trade && indicator_result == OP_SELL && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1) > last_sell_price)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_MAIN, 1) < last_buy_price)
+    else if (long_trade && indicator_result == OP_BUY && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1) < last_buy_price)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -198,6 +180,11 @@ void Update()
     {
         lots_multiplier = MathPow(exp_base, OrdersTotal());
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+        commission      = CalculateCommission() * -1;
+        all_lots        = CalculateLots();
+        delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
+        i_takeprofit = MathRound(commission / delta) + pipstep * 2;
+        
     }
     
     if (!IsOptimization())
@@ -225,11 +212,8 @@ void NewOrdersPlaced()
         ExpertRemove();
     }
     total = OrdersTotal();
-    commission      = CalculateCommission() * -1;
-    all_lots        = CalculateLots();
-    delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound((commission / delta) + (pipstep));
-    
+
+    Update();
     UpdateAveragePrice();
     UpdateOpenOrders();
 }
@@ -243,8 +227,8 @@ void UpdateAveragePrice()
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number)
         {
-            average_price += OrderOpenPrice() * (OrderLots());
-            count += (OrderLots());
+            average_price += OrderOpenPrice() * (OrderLots() - (OrderCommission() * -1));
+            count += (OrderLots() - (OrderCommission() * - 1));
         }
     }
     average_price = NormalizeDouble(average_price / count, Digits);
@@ -304,8 +288,8 @@ double IndicatorSignal()
             break;
         }
     }
-    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)) return OP_SELL;
-    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1)) return OP_BUY;
+    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1)) return OP_SELL;
+    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1)) return OP_BUY;
     if (rsi > rsi_mid) return 500;
     if (rsi < rsi_mid) return -500;
     return (-1);
