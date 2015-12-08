@@ -1,6 +1,6 @@
 enum I_SIG
 {
-    RSI, MFI, CCI
+    MFI, CCI
 };
 
 
@@ -20,6 +20,10 @@ double rsi             = 0;
 double tp_dist         = 0;
 double rsi_prev = 0;
 double rsi_mid     = 0;
+double bands_highest = 0;
+double bands_high = 0;
+double bands_low = 0;
+double bands_lowest = 0;
 int error              = 0;
 int lotdecimal         = 2;
 int magic_number       = 2222;
@@ -36,7 +40,7 @@ extern int rsi_period  = 14;
 extern int stddev_period = 14;
 extern double exp_base = 1.7;
 extern double lots             = 0.01;
-extern I_SIG indicator = 2;
+extern I_SIG indicator = 0;
 uint time_start = GetTickCount();
 uint time_elapsed = 0;
 
@@ -119,26 +123,26 @@ int start()
         NewOrdersPlaced();
         return 0;
     }
-    else if (short_trade && Ask < iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1) && AccountProfit() >= 0)
+    else if (short_trade && Ask < bands_lowest && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
     }
-    else if (long_trade && Bid >  iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1)&& AccountProfit() >= 0)
+    else if (long_trade && Bid > bands_highest && AccountProfit() >= 0)
     {
         CloseThisSymbolAll();
         return 0;
     }
     
     /*** Proceeding Trades ***/
-    if (short_trade && indicator_result == OP_SELL && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1) > last_sell_price)
+    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1) < last_buy_price)
+    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -266,13 +270,6 @@ double IndicatorSignal()
 {    
     switch (indicator)
     {
-        case RSI:
-        {
-            rsi      = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-            rsi_prev = iRSI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-            rsi_mid = 50;
-            break;
-        }
         case MFI:
         {
             rsi      = iMFI(0, 0, rsi_period, 1);
@@ -288,8 +285,13 @@ double IndicatorSignal()
             break;
         }
     }
-    if (rsi > rsi_max && Bid > iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1)) return OP_SELL;
-    if (rsi < rsi_min && Ask < iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1)) return OP_BUY;
+    bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_high    = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    
+    if (rsi > rsi_max && Bid > bands_high) return OP_SELL;
+    if (rsi < rsi_min && Ask < bands_low)  return OP_BUY;
     if (rsi > rsi_mid) return 500;
     if (rsi < rsi_mid) return -500;
     return (-1);
