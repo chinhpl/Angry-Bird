@@ -109,7 +109,7 @@ int start()
     //---
     
     //--- Cancels
-    if (AccountProfit() > 0)
+    if (AccountProfit() >= 0)
     {
         if (short_trade)
         {
@@ -125,7 +125,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Ask < bands_mid)
+            if (Ask < bands_low)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -145,7 +145,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Bid > bands_mid)
+            if (Bid > bands_high)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -207,11 +207,11 @@ void Update()
     
     if (short_trade)
     {
-        tp_dist      = (Bid - last_sell_price) / Point;
+        tp_dist      = (Bid - average_price) / Point;
     }
     else if (long_trade)
     {
-        tp_dist      = (last_buy_price - Ask) / Point;
+        tp_dist      = (average_price - Ask) / Point;
     } 
     
     if (total == 0)
