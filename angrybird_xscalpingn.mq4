@@ -153,36 +153,40 @@ int start()
         }
     }
     /*
-    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-    if (OrderProfit() > OrderCommission() * -1)
+    for (int i = OrdersTotal() - 1; i > 0; i--)
     {
-        if (short_trade && Ask < bands_extra_low && Ask > average_price)
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (OrderProfit() > OrderCommission() * -1)
         {
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrMagenta);
-            last_sell_price = FindLastSellPrice();
-            NewOrdersPlaced();
-            return 0;
-        }
-        else if (long_trade && Bid > bands_extra_high && Bid < average_price)
-        {
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
-            last_buy_price = FindLastBuyPrice();
-            NewOrdersPlaced();
-            return 0;
+            if (short_trade && Ask < bands_lowest && Ask > average_price && indicator_result == OP_BUY)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrMagenta);
+                last_sell_price = FindLastSellPrice();
+                NewOrdersPlaced();
+                return 0;
+            }
+            else if (long_trade && Bid > bands_highest && Bid < average_price && indicator_result == OP_SELL)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
+                last_buy_price = FindLastBuyPrice();
+                NewOrdersPlaced();
+                return 0;
+            }
         }
     }
     */
+    
     //---
     
     //--- Proceeding Trades
-    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price && Bid > bands_highest)
+    if (short_trade && indicator_result == OP_SELL && bands_low > last_sell_price && Bid > bands_highest)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price && Ask < bands_lowest)
+    else if (long_trade && indicator_result == OP_BUY && bands_high < last_buy_price && Ask < bands_lowest)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -225,6 +229,16 @@ void Update()
         i_lots          = lots;
         //---
     }
+    else
+    {
+        total = OrdersTotal();
+        lots_multiplier = MathPow(exp_base, tp_dist * Point);
+        i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+        commission      = CalculateCommission() * -1;
+        all_lots        = CalculateLots();
+        delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
+        i_takeprofit = MathRound(commission / delta) + pipstep * 2;
+    }
     
     if (!IsOptimization())
     {
@@ -252,14 +266,6 @@ void NewOrdersPlaced()
         ExpertRemove();
     }
     //---
-    
-    total = OrdersTotal();
-    lots_multiplier = MathPow(exp_base, OrdersTotal());
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    commission      = CalculateCommission() * -1;
-    all_lots        = CalculateLots();
-    delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-    i_takeprofit = MathRound(commission / delta) + pipstep * 2;
     
     Update();
     UpdateAveragePrice();
