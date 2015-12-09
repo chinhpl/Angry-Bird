@@ -152,29 +152,26 @@ int start()
             }
         }
     }
-    
-    for (int i = 1; i < OrdersTotal(); i++)
+    /*
+    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    if (OrderProfit() > OrderCommission() * -1)
     {
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderProfit() > OrderCommission() * -1)
+        if (short_trade && Ask < bands_extra_low && Ask > average_price)
         {
-            if (short_trade && Ask < bands_extra_low && Ask > average_price)
-            {
-                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlack);
-                last_sell_price = FindLastSellPrice();
-                NewOrdersPlaced();
-                return 0;
-            }
-            else if (long_trade && Bid > bands_extra_high && Bid < average_price)
-            {
-                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlack);
-                last_buy_price = FindLastBuyPrice();
-                NewOrdersPlaced();
-                return 0;
-            }
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrMagenta);
+            last_sell_price = FindLastSellPrice();
+            NewOrdersPlaced();
+            return 0;
+        }
+        else if (long_trade && Bid > bands_extra_high && Bid < average_price)
+        {
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
+            last_buy_price = FindLastBuyPrice();
+            NewOrdersPlaced();
+            return 0;
         }
     }
-    
+    */
     //---
     
     //--- Proceeding Trades
