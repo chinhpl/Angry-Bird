@@ -19,6 +19,8 @@ double delta           = 0;
 double rsi             = 0;
 double tp_dist         = 0;
 double rsi_prev = 0;
+double bands_extra_high = 0;
+double bands_extra_low = 0;
 double bands_highest = 0;
 double bands_high = 0;
 double bands_mid = 0;
@@ -107,7 +109,7 @@ int start()
     //---
     
     //--- Cancels
-    if (AccountProfit() >= 0)
+    if (AccountProfit() > 0)
     {
         if (short_trade)
         {
@@ -123,7 +125,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Ask < bands_low)
+            if (Ask < bands_mid)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -143,24 +145,47 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Bid > bands_high)
+            if (Bid > bands_mid)
             {
                 CloseThisSymbolAll();
                 return 0;
             }
         }
     }
+    
+    for (int i = 1; i < OrdersTotal(); i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (OrderProfit() > OrderCommission() * -1)
+        {
+            if (short_trade && Ask < bands_extra_low && Ask > average_price)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlack);
+                last_sell_price = FindLastSellPrice();
+                NewOrdersPlaced();
+                return 0;
+            }
+            else if (long_trade && Bid > bands_extra_high && Bid < average_price)
+            {
+                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlack);
+                last_buy_price = FindLastBuyPrice();
+                NewOrdersPlaced();
+                return 0;
+            }
+        }
+    }
+    
     //---
     
     //--- Proceeding Trades
-    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price && Bid > bands_high)
+    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price && Bid > bands_highest)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price && Ask < bands_low)
+    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price && Ask < bands_lowest)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -239,6 +264,7 @@ void NewOrdersPlaced()
     delta = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
     i_takeprofit = MathRound(commission / delta) + pipstep * 2;
     
+    Update();
     UpdateAveragePrice();
     UpdateOpenOrders();
 }
@@ -315,6 +341,9 @@ double IndicatorSignal()
     bands_mid     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
     bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    
+    bands_extra_high = iBands(0, 0, stddev_period, 3, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_extra_low  = iBands(0, 0, stddev_period, 3, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     
     if (rsi > rsi_max) return OP_SELL;
     if (rsi < rsi_min) return OP_BUY;
