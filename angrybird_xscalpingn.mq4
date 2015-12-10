@@ -109,7 +109,7 @@ int start()
     //---
     
     //--- Cancels
-    if (AccountProfit() >= 0)
+    if (AccountProfit() > 0)
     {
         if (short_trade)
         {
@@ -155,20 +155,38 @@ int start()
     //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_result == OP_SELL && bands_mid > last_sell_price && Bid > bands_highest)
+    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price && Bid > bands_highest)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && bands_mid < last_buy_price && Ask < bands_lowest)
+    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price && Ask < bands_lowest)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
+    }/*
+    else if (short_trade && indicator_result == OP_BUY && bands_extra_low > last_sell_price && Ask < bands_lowest)
+    {
+            CloseThisSymbolAll();
+            Update();
+            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+            last_buy_price = Ask;
+            NewOrdersPlaced();
     }
+    else if (long_trade && indicator_result == OP_SELL && bands_extra_high < last_buy_price && Bid > bands_highest)
+    {
+            CloseThisSymbolAll();
+            Update();
+            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                              magic_number, 0, clrHotPink);
+            last_sell_price = Bid;
+            NewOrdersPlaced();
+    }*/
     //---
     return (0);
 }
@@ -208,7 +226,8 @@ void Update()
     else
     {
         total = OrdersTotal();
-        lots_multiplier = MathPow(exp_base, tp_dist * Point);
+        //lots_multiplier = MathPow(exp_base, (tp_dist * Point));
+        lots_multiplier = (tp_dist * Point) * exp_base;
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission      = CalculateCommission() * -1;
         all_lots        = CalculateLots();
