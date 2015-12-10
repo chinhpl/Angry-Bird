@@ -90,14 +90,14 @@ int start()
     //--- First
     if (total == 0)
     {
-        if (indicator_result == OP_BUY && Ask < bands_lowest)
+        if (indicator_result == OP_BUY)
         {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
             last_buy_price = Ask;
             NewOrdersPlaced();
         }
-        else if (indicator_result == OP_SELL && Bid > bands_highest)
+        else if (indicator_result == OP_SELL)
         {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
@@ -114,7 +114,7 @@ int start()
         if (short_trade)
         {
             //--- Closes sell and opens buy
-            if (indicator_result == OP_BUY && Ask < bands_lowest)
+            if (indicator_result == OP_BUY)
             {
                 CloseThisSymbolAll();
                 Update();
@@ -134,7 +134,7 @@ int start()
         if (long_trade)
         {
             //--- Closes buy and opens sell
-            if (indicator_result == OP_SELL && Bid > bands_highest)
+            if (indicator_result == OP_SELL)
             {
                 CloseThisSymbolAll();
                 Update();
@@ -155,14 +155,14 @@ int start()
     //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price && Bid > bands_highest)
+    if (short_trade && indicator_result == OP_SELL && bands_lowest > last_sell_price)
     {
             error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                               magic_number, 0, clrHotPink);
             last_sell_price = Bid;
             NewOrdersPlaced();
     }
-    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price && Ask < bands_lowest)
+    else if (long_trade && indicator_result == OP_BUY && bands_highest < last_buy_price)
     {
             error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
@@ -226,7 +226,7 @@ void Update()
     else
     {
         total = OrdersTotal();
-        //lots_multiplier = MathPow(exp_base, (tp_dist * Point));
+        //lots_multiplier = MathPow(exp_base, OrdersTotal());
         lots_multiplier = (tp_dist * Point) * exp_base;
         i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission      = CalculateCommission() * -1;
