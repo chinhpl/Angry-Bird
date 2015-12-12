@@ -309,8 +309,6 @@ double IndicatorSignal()
 
     if (rsi_prev > rsi_max && rsi < rsi_prev && Bid > bands_high) return OP_SELL;
     if (rsi_prev < rsi_min && rsi > rsi_prev && Ask < bands_low)  return OP_BUY;
-
-    RefreshRates();
     return (-1);
 }
 //+------------------------------------------------------------------+
@@ -430,18 +428,27 @@ double FindLastSellPrice()
 
 void SendBuy()
 {
-    error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                      magic_number, 0, clrLimeGreen);
-    if (error == -1) Print("ERROR!: " + GetLastError());
+    do
+    {
+   
+        RefreshRates();
+        error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                          magic_number, 0, clrLimeGreen);
+    } while (GetLastError() == ERR_OFF_QUOTES);
+    
     last_buy_price = Ask;
     NewOrdersPlaced();
 }
 
 void SendSell()
 {
-    error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                      magic_number, 0, clrHotPink);
-    if (error == -1) Print("ERROR!: " + GetLastError());
+    do
+    {
+        RefreshRates();
+        error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                          magic_number, 0, clrHotPink);
+    } while (GetLastError() == ERR_OFF_QUOTES);
+    
     last_sell_price = Bid;
     NewOrdersPlaced();
 }
