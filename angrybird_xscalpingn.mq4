@@ -141,11 +141,11 @@ int start()
     //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && bands_low > last_sell_price)
+    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price + pipstep * Point)
     {
         SendSell();
     }
-    else if (long_trade && indicator_ == OP_BUY && bands_high < last_buy_price)
+    else if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price - pipstep * Point)
     {
         SendBuy();
     }
@@ -159,7 +159,7 @@ void Update()
 {
     total = OrdersTotal();
 
-    pipstep = 1 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) /
+    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) /
                    Point);
 
     if (short_trade)
@@ -190,9 +190,9 @@ void Update()
     {
         total = OrdersTotal();
 
-        lots_multiplier = MathPow(exp_base, OrdersTotal());
+        // lots_multiplier = MathPow(exp_base, OrdersTotal());
         // lots_multiplier = MathPow(exp_base, tp_dist * Point);
-        // lots_multiplier = (tp_dist * Point) * exp_base;
+         lots_multiplier = (tp_dist * Point) * exp_base;
         if (lots_multiplier < 1) lots_multiplier = 1;
 
         i_lots       = NormalizeDouble(lots * lots_multiplier, lotdecimal);
