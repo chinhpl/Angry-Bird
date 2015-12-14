@@ -32,7 +32,7 @@ int lotdecimal           = 2;
 int magic_number         = 2222;
 int pipstep              = 0;
 int previous_time        = 0;
-int slip                 = 10000;
+int slip                 = 1000;
 int total                = 0;
 string comment           = "";
 string name              = "Ilan1.6";
@@ -159,8 +159,7 @@ void Update()
 {
     total = OrdersTotal();
 
-    pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) /
-                   Point);
+    pipstep = (2 / Point) / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0);
 
     if (short_trade)
     {
@@ -199,7 +198,7 @@ void Update()
         commission   = CalculateCommission() * -1;
         all_lots     = CalculateLots();
         delta        = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound(commission / delta) + pipstep * 2;
+        i_takeprofit = MathRound(commission / delta) + pipstep;
     }
 
     if (!IsOptimization())
@@ -286,29 +285,31 @@ void UpdateOpenOrders()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
+    double rsi_open;
+
     //--- Indicator selection
     if (indicator == MFI)
     {
         rsi      = iMFI(0, 0, rsi_period, 1);
         rsi_prev = iMFI(0, 0, rsi_period, 2);
+        rsi_open = iMFI(0, 0, rsi_period, 0);
     }
     else if (indicator == CCI)
     {
         rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
         rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+        rsi_open = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 0);
     }
     //---
 
-    bands_extra_high = iBands(0, 0, stddev_period, 3, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_highest    = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_high       = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_mid        = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
-    bands_low        = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-    bands_lowest     = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-    bands_extra_low  = iBands(0, 0, stddev_period, 3, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_high    = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_mid     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
+    bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi_prev > rsi_max && rsi < rsi_prev && Bid > bands_high) return OP_SELL;
-    if (rsi_prev < rsi_min && rsi > rsi_prev && Ask < bands_low)  return OP_BUY;
+    if (rsi > rsi_max && rsi < rsi_prev && Bid > bands_high) return OP_SELL;
+    if (rsi < rsi_min && rsi > rsi_prev && Ask < bands_low)  return OP_BUY;
     return (-1);
 }
 //+------------------------------------------------------------------+
@@ -428,27 +429,36 @@ double FindLastSellPrice()
 
 void SendBuy()
 {
-    do
+    error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+/*
+    while (GetLastError() == ERR_OFF_QUOTES)
     {
-   
-        RefreshRates();
-        error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                          magic_number, 0, clrLimeGreen);
-    } while (GetLastError() == ERR_OFF_QUOTES);
-    
+       if (RefreshRates() == TRUE)
+       {       
+            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                              magic_number, 0, clrLimeGreen);
+        }
+    } 
+*/
     last_buy_price = Ask;
     NewOrdersPlaced();
 }
 
 void SendSell()
 {
-    do
-    {
-        RefreshRates();
-        error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+    error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                           magic_number, 0, clrHotPink);
-    } while (GetLastError() == ERR_OFF_QUOTES);
-    
+/*
+    while (GetLastError() == ERR_OFF_QUOTES)
+    {
+       if (RefreshRates() == TRUE)
+       {       
+            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                          magic_number, 0, clrHotPink);
+        }
+    }
+*/
     last_sell_price = Bid;
     NewOrdersPlaced();
 }
