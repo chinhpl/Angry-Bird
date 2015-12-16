@@ -114,7 +114,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Ask < bands_mid)
+            if (indicator_ == -500)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -131,7 +131,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (Bid > bands_mid)
+            if (indicator_ == 500)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -141,11 +141,11 @@ int start()
     //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price + pipstep * Point)
+    if (short_trade && indicator_ == OP_SELL && bands_lowest > last_sell_price)
     {
         SendSell();
     }
-    else if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price - pipstep * Point)
+    else if (long_trade && indicator_ == OP_BUY && bands_highest < last_buy_price)
     {
         SendBuy();
     }
@@ -159,7 +159,8 @@ void Update()
 {
     total = OrdersTotal();
 
-    pipstep = (2 / Point) / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0);
+    // pipstep = (2 / Point) / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0);
+     pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point);
 
     if (short_trade)
     {
@@ -189,16 +190,16 @@ void Update()
     {
         total = OrdersTotal();
 
-        // lots_multiplier = MathPow(exp_base, OrdersTotal());
+         lots_multiplier = MathPow(exp_base, OrdersTotal());
         // lots_multiplier = MathPow(exp_base, tp_dist * Point);
-         lots_multiplier = (tp_dist * Point) * exp_base;
+        // lots_multiplier = (tp_dist * Point) * exp_base;
         if (lots_multiplier < 1) lots_multiplier = 1;
 
         i_lots       = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission   = CalculateCommission() * -1;
         all_lots     = CalculateLots();
         delta        = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound(commission / delta) + pipstep;
+        i_takeprofit = MathRound(commission / delta) + 100000;
     }
 
     if (!IsOptimization())
@@ -285,20 +286,23 @@ void UpdateOpenOrders()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double rsi_open;
+    double rsi_leg;
+    double rsi_mid;
 
     //--- Indicator selection
     if (indicator == MFI)
     {
         rsi      = iMFI(0, 0, rsi_period, 1);
         rsi_prev = iMFI(0, 0, rsi_period, 2);
-        rsi_open = iMFI(0, 0, rsi_period, 0);
+        rsi_leg  = iMFI(0, 0, rsi_period, 3);
+        rsi_mid  = 50;
     }
     else if (indicator == CCI)
     {
         rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
         rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-        rsi_open = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 0);
+        rsi_leg  = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 3);
+        rsi_mid  = 0;
     }
     //---
 
@@ -308,8 +312,10 @@ double IndicatorSignal()
     bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max && rsi < rsi_prev && Bid > bands_high) return OP_SELL;
-    if (rsi < rsi_min && rsi > rsi_prev && Ask < bands_low)  return OP_BUY;
+    if (rsi > rsi_max && rsi < rsi_prev && rsi_prev > rsi_leg) return OP_SELL;
+    if (rsi < rsi_min && rsi > rsi_prev && rsi_prev < rsi_leg) return OP_BUY;
+    if (rsi > rsi_mid) return  500;
+    if (rsi < rsi_mid) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
