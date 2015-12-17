@@ -31,7 +31,6 @@ int error                = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
 int magic_number         = 2222;
-int pipstep              = 0;
 int previous_time        = 0;
 int slip                 = 1000;
 int total                = 0;
@@ -144,7 +143,7 @@ int start()
     //---
     
     //--- Takes last trade if possible
-    if (short_trade && indicator_ == OP_BUY && Bid > average_price)
+    if (short_trade && indicator_ == OP_BUY && Bid > average_price && bands_highest < last_sell_price)
     {
         error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
         if (OrderProfit() >= OrderCommission() * -1)
@@ -155,7 +154,7 @@ int start()
             return 0;
         }
     }
-    else if (long_trade && indicator_ == OP_SELL && Ask < average_price)
+    else if (long_trade && indicator_ == OP_SELL && Ask < average_price && bands_lowest > last_buy_price)
     {
         error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
         if (OrderProfit() >= OrderCommission() * -1)
@@ -187,9 +186,6 @@ void Update()
 {
     total = OrdersTotal();
 
-    // pipstep = (2 / Point) / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0);
-     pipstep = 2 * (iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0) / Point);
-
     if (short_trade)
     {
         tp_dist = (Bid - average_price) / Point;
@@ -219,9 +215,8 @@ void Update()
         total = OrdersTotal();
 
         // lots_multiplier = MathPow(exp_base, OrdersTotal());
-         lots_multiplier = MathPow(exp_base, tp_dist * Point);
-        // lots_multiplier = (tp_dist * Point) * exp_base;
-        if (lots_multiplier < 1) lots_multiplier = 1;
+        // lots_multiplier = MathPow(exp_base, tp_dist * Point);
+         lots_multiplier = 1 + ((tp_dist * Point) * exp_base);
 
         i_lots       = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission   = CalculateCommission() * -1;
@@ -235,7 +230,7 @@ void Update()
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
-        Comment("Last Distance: " + tp_dist + " Pipstep: " + pipstep + " Take Profit: " + i_takeprofit +
+        Comment("Last Distance: " + tp_dist + " Lots Multiplier: " + lots_multiplier + " Take Profit: " + i_takeprofit +
                 " Lots: " + i_lots + " Time: " + time_difference);
     }
 }
@@ -341,8 +336,8 @@ double IndicatorSignal()
     bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max && rsi < rsi_prev) return OP_SELL;
-    if (rsi < rsi_min && rsi > rsi_prev) return OP_BUY;
+    if (rsi > rsi_max && Ask > bands_highest) return OP_SELL;
+    if (rsi < rsi_min && Bid < bands_lowest)  return OP_BUY;
     if (rsi > rsi_mid) return  500;
     if (rsi < rsi_mid) return -500;
     return (-1);
