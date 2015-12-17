@@ -27,6 +27,7 @@ double price_target      = 0;
 double rsi               = 0;
 double rsi_prev          = 0;
 double tp_dist           = 0;
+double stdev             = 0;
 int error                = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
@@ -116,7 +117,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (indicator_ == -500)
+            if (indicator_ == -500 && bands_highest < last_sell_price)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -133,7 +134,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (indicator_ == 500)
+            if (indicator_ == 500 && bands_lowest > last_buy_price)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -141,7 +142,7 @@ int start()
         }
     }
     //---
-    
+
     //--- Takes last trade if possible
     if (short_trade && indicator_ == OP_BUY && Bid > average_price && bands_highest < last_sell_price)
     {
@@ -166,7 +167,7 @@ int start()
         }
     }
     //---
-    
+
     //--- Proceeding Trades
     if (short_trade && indicator_ == OP_SELL && bands_lowest > last_sell_price)
     {
@@ -185,6 +186,7 @@ int start()
 void Update()
 {
     total = OrdersTotal();
+    stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0), Digits);
 
     if (short_trade)
     {
@@ -214,9 +216,8 @@ void Update()
     {
         total = OrdersTotal();
 
-        // lots_multiplier = MathPow(exp_base, OrdersTotal());
-        // lots_multiplier = MathPow(exp_base, tp_dist * Point);
-         lots_multiplier = 1 + ((tp_dist * Point) * exp_base);
+         lots_multiplier = MathPow(exp_base, OrdersTotal());
+        // lots_multiplier = 1 + ((tp_dist * Point) * exp_base);
 
         i_lots       = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         commission   = CalculateCommission() * -1;
@@ -230,7 +231,7 @@ void Update()
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
-        Comment("Last Distance: " + tp_dist + " Lots Multiplier: " + lots_multiplier + " Take Profit: " + i_takeprofit +
+        Comment("Last Distance: " + tp_dist + " Take Profit: " + i_takeprofit +
                 " Lots: " + i_lots + " Time: " + time_difference);
     }
 }
@@ -336,8 +337,8 @@ double IndicatorSignal()
     bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max && Ask > bands_highest) return OP_SELL;
-    if (rsi < rsi_min && Bid < bands_lowest)  return OP_BUY;
+    if (rsi > rsi_max && rsi < rsi_prev) return OP_SELL;
+    if (rsi < rsi_min && rsi > rsi_prev) return OP_BUY;
     if (rsi > rsi_mid) return  500;
     if (rsi < rsi_mid) return -500;
     return (-1);
@@ -461,16 +462,6 @@ void SendBuy()
 {
     error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
                               magic_number, 0, clrLimeGreen);
-/*
-    while (GetLastError() == ERR_OFF_QUOTES)
-    {
-       if (RefreshRates() == TRUE)
-       {       
-            error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                              magic_number, 0, clrLimeGreen);
-        }
-    } 
-*/
     last_buy_price = Ask;
     NewOrdersPlaced();
 }
@@ -479,16 +470,6 @@ void SendSell()
 {
     error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
                           magic_number, 0, clrHotPink);
-/*
-    while (GetLastError() == ERR_OFF_QUOTES)
-    {
-       if (RefreshRates() == TRUE)
-       {       
-            error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                          magic_number, 0, clrHotPink);
-        }
-    }
-*/
     last_sell_price = Bid;
     NewOrdersPlaced();
 }
