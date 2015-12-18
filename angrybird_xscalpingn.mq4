@@ -117,7 +117,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (indicator_ == -500 && bands_highest < last_sell_price)
+            if (indicator_ == -500)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -134,7 +134,7 @@ int start()
                 return 0;
             }
             //--- Take
-            if (indicator_ == 500 && bands_lowest > last_buy_price)
+            if (indicator_ == 500)
             {
                 CloseThisSymbolAll();
                 return 0;
@@ -142,32 +142,7 @@ int start()
         }
     }
     //---
-
-    //--- Takes last trade if possible
-    if (short_trade && indicator_ == OP_BUY && Bid > average_price && bands_highest < last_sell_price)
-    {
-        error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-        if (OrderProfit() >= OrderCommission() * -1)
-        {
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrMagenta);
-            last_sell_price = FindLastSellPrice();
-            NewOrdersPlaced();
-            return 0;
-        }
-    }
-    else if (long_trade && indicator_ == OP_SELL && Ask < average_price && bands_lowest > last_buy_price)
-    {
-        error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-        if (OrderProfit() >= OrderCommission() * -1)
-        {
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
-            last_buy_price = FindLastBuyPrice();
-            NewOrdersPlaced();
-            return 0;
-        }
-    }
-    //---
-
+    
     //--- Proceeding Trades
     if (short_trade && indicator_ == OP_SELL && bands_lowest > last_sell_price)
     {
@@ -186,7 +161,8 @@ int start()
 void Update()
 {
     total = OrdersTotal();
-    stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 0), Digits);
+     stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
+    // stdev = NormalizeDouble(1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
 
     if (short_trade)
     {
@@ -231,7 +207,7 @@ void Update()
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
-        Comment("Last Distance: " + tp_dist + " Take Profit: " + i_takeprofit +
+        Comment("Last Distance: " + tp_dist + " Deviation: " + stdev + " Take Profit: " + i_takeprofit +
                 " Lots: " + i_lots + " Time: " + time_difference);
     }
 }
@@ -337,8 +313,8 @@ double IndicatorSignal()
     bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max && rsi < rsi_prev) return OP_SELL;
-    if (rsi < rsi_min && rsi > rsi_prev) return OP_BUY;
+    if (rsi > rsi_max /*&& rsi < rsi_prev*/) return OP_SELL;
+    if (rsi < rsi_min /*&& rsi > rsi_prev*/) return OP_BUY;
     if (rsi > rsi_mid) return  500;
     if (rsi < rsi_mid) return -500;
     return (-1);
