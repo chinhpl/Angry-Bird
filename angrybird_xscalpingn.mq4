@@ -144,11 +144,11 @@ int start()
     //---
     
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && bands_lowest > last_sell_price)
+    if (short_trade && indicator_ == OP_SELL && /*bands_lowest > last_sell_price*/ Bid > last_sell_price + stdev)
     {
         SendSell();
     }
-    else if (long_trade && indicator_ == OP_BUY && bands_highest < last_buy_price)
+    else if (long_trade && indicator_ == OP_BUY && /*bands_highest < last_buy_price*/ Ask < last_buy_price - stdev)
     {
         SendBuy();
     }
@@ -161,8 +161,8 @@ int start()
 void Update()
 {
     total = OrdersTotal();
-     stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
-    // stdev = NormalizeDouble(1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
+    // stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
+     stdev = NormalizeDouble(1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
 
     if (short_trade)
     {
@@ -308,9 +308,7 @@ double IndicatorSignal()
     //---
 
     bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_high    = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_UPPER, 1);
     bands_mid     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
-    bands_low     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
     if (rsi > rsi_max /*&& rsi < rsi_prev*/) return OP_SELL;
