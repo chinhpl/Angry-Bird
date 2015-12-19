@@ -27,14 +27,14 @@ double price_target      = 0;
 double rsi               = 0;
 double rsi_prev          = 0;
 double tp_dist           = 0;
-double stdev             = 0;
+double pipstep           = 0;
+double max_dev           = 0;
 int error                = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
 int magic_number         = 2222;
 int previous_time        = 0;
 int slip                 = 1000;
-int total                = 0;
 string comment           = "";
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
@@ -56,8 +56,8 @@ int init()
         if (rsi_min < 0   && indicator != CCI) ExpertRemove();
         initial_deposit = AccountBalance();
     }
-    total = OrdersTotal();
-    if (total)
+    
+    if (OrdersTotal() == 0)
     {
         last_buy_price  = FindLastBuyPrice();
         last_sell_price = FindLastSellPrice();
@@ -144,11 +144,11 @@ int start()
     //---
     
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && /*bands_lowest > last_sell_price*/ Bid > last_sell_price + stdev)
+    if (short_trade && indicator_ == OP_SELL && /*bands_lowest > last_sell_price*/ Bid > last_sell_price + pipstep)
     {
         SendSell();
     }
-    else if (long_trade && indicator_ == OP_BUY && /*bands_highest < last_buy_price*/ Ask < last_buy_price - stdev)
+    else if (long_trade && indicator_ == OP_BUY && /*bands_highest < last_buy_price*/ Ask < last_buy_price - pipstep)
     {
         SendBuy();
     }
@@ -160,23 +160,11 @@ int start()
 //+------------------------------------------------------------------+
 void Update()
 {
-    total = OrdersTotal();
-    // stdev = NormalizeDouble(2 * iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
-     stdev = NormalizeDouble(1 / iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1), Digits);
-
-    if (short_trade)
-    {
-        tp_dist = (Bid - average_price) / Point;
-    }
-    else if (long_trade)
-    {
-        tp_dist = (average_price - Ask) / Point;
-    }
-
     if (OrdersTotal() == 0)
     {
         //--- Resets
-        all_lots        = 0;
+        max_dev         = 0;
+        pipstep         = 0;
         average_price   = 0;
         commission      = 0;
         i_takeprofit    = 0;
@@ -185,21 +173,17 @@ void Update()
         i_lots          = lots;
         long_trade      = FALSE;
         short_trade     = FALSE;
-        delta           = MarketInfo(Symbol(), MODE_TICKVALUE) * lots;
         //---
     }
     else
     {
-        total = OrdersTotal();
+        lots_multiplier = MathPow(exp_base, OrdersTotal());
+        i_lots           = NormalizeDouble(lots * lots_multiplier, lotdecimal);
 
-         lots_multiplier = MathPow(exp_base, OrdersTotal());
-        // lots_multiplier = 1 + ((tp_dist * Point) * exp_base);
+        double stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+        if (stddev > max_dev) max_dev = stddev;
+        pipstep = NormalizeDouble(max_dev / stddev, Digits);
 
-        i_lots       = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-        commission   = CalculateCommission() * -1;
-        all_lots     = CalculateLots();
-        delta        = MarketInfo(Symbol(), MODE_TICKVALUE) * all_lots;
-        i_takeprofit = MathRound(commission / delta);
     }
 
     if (!IsOptimization())
@@ -207,8 +191,10 @@ void Update()
         int time_difference = TimeCurrent() - Time[0];
         ObjectSet("Average Price", OBJPROP_PRICE1, average_price);
 
-        Comment("Last Distance: " + tp_dist + " Deviation: " + stdev + " Take Profit: " + i_takeprofit +
-                " Lots: " + i_lots + " Time: " + time_difference);
+        Comment("Pipstep: "  + pipstep +
+                " Max dev: " + max_dev +
+                " Lots: "    + i_lots +
+                " Time: "    + time_difference);
     }
 }
 //+------------------------------------------------------------------+
@@ -236,7 +222,7 @@ void NewOrdersPlaced()
     //---
 
     Update();
-    UpdateAveragePrice();
+    //UpdateAveragePrice();
     UpdateOpenOrders();
 }
 //+------------------------------------------------------------------+
@@ -311,8 +297,8 @@ double IndicatorSignal()
     bands_mid     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max /*&& rsi < rsi_prev*/) return OP_SELL;
-    if (rsi < rsi_min /*&& rsi > rsi_prev*/) return OP_BUY;
+    if (rsi > rsi_max/* && rsi < rsi_prev && rsi_prev > rsi_leg*/) return OP_SELL;
+    if (rsi < rsi_min/* && rsi > rsi_prev && rsi_prev < rsi_leg*/) return OP_BUY;
     if (rsi > rsi_mid) return  500;
     if (rsi < rsi_mid) return -500;
     return (-1);
