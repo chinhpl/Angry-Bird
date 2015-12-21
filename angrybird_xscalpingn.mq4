@@ -124,12 +124,12 @@ int start()
     }  //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL)
+    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price)
     {
         UpdatePipstep();
         if (Bid > last_sell_price + pipstep) SendSell();
     }
-    else if (long_trade && indicator_ == OP_BUY)
+    else if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price)
     {
         UpdatePipstep();
         if (Ask < last_buy_price - pipstep) SendBuy();
@@ -158,7 +158,7 @@ void Update()
         if (OrderType() == OP_SELL) short_trade = TRUE;
     }
 
-    if (!IsTesting() || IsVisualMode())
+    if (!IsOptimization())
     {  //--- OSD Debug
         UpdatePipstep();
 
