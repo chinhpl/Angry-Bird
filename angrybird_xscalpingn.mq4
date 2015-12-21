@@ -9,11 +9,7 @@ bool long_trade          = FALSE;
 bool short_trade         = FALSE;
 double all_lots          = 0;
 double average_price     = 0;
-double bands_extra_high  = 0;
-double bands_extra_low   = 0;
-double bands_high        = 0;
 double bands_highest     = 0;
-double bands_low         = 0;
 double bands_lowest      = 0;
 double bands_mid         = 0;
 double commission        = 0;
@@ -23,11 +19,10 @@ double i_takeprofit      = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
-double rsi               = 0;
-double rsi_prev          = 0;
+double rsi_open          = 0;
+double rsi_close         = 0;
 double tp_dist           = 0;
 double pipstep           = 0;
-double max_dev           = 0;
 int error                = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
@@ -56,7 +51,7 @@ int init()
         initial_deposit = AccountBalance();
     }
 
-    if (OrdersTotal() == 0)
+    if (OrdersTotal() != 0)
     {
         last_buy_price  = FindLastBuyPrice();
         last_sell_price = FindLastSellPrice();
@@ -125,12 +120,12 @@ int start()
     }  //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && bands_lowest > last_sell_price)
+    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price + pipstep)
     {
         SendSell();
         return 0;
     }
-    if (long_trade && indicator_ == OP_BUY && bands_highest < last_buy_price)
+    if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price - pipstep)
     {
         SendBuy();
         return 0;
@@ -141,7 +136,17 @@ int start()
 //|                                                                  |
 //+------------------------------------------------------------------+
 void Update()
-{
+{   //--- Grabs highest deviation from one day
+    double max_dev = 0;
+    double stddev  = 0;
+    for (int i = 1440 / Period(); i >= 0; i--)
+    {
+        stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, i);
+        if (stddev > max_dev) max_dev = NormalizeDouble(stddev, Digits);
+    }
+    pipstep = NormalizeDouble(max_dev / stddev, Digits);
+    //---
+    
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         
@@ -162,7 +167,10 @@ void Update()
     if (!IsOptimization())
     {  //--- OSD Debug
         int time_difference = TimeCurrent() - Time[0];
-        Comment("Lots: " + i_lots + " Time: " + time_difference);
+        Comment("Pipstep: "  + pipstep +
+                " Max Dev: " + max_dev +
+                " Lots: "    + i_lots +
+                " Time: "    + time_difference);
     }  //---
 }
 //+------------------------------------------------------------------+
@@ -196,29 +204,23 @@ void NewOrdersPlaced()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double rsi_mid;
+    double rsi_mid   = (rsi_max + rsi_min) / 2;
 
     if (indicator == MFI)
     {  //--- Indicator selection
-        rsi      = iMFI(0, 0, rsi_period, 1);
-        rsi_prev = iMFI(0, 0, rsi_period, 2);
-        rsi_mid  = 50;
+        rsi_open  = iMFI(0, 0, rsi_period, 1);
+        rsi_close = iMFI(0, 0, rsi_period, 2);
     }
     else if (indicator == CCI)
     {
-        rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-        rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-        rsi_mid  = 0;
+        rsi_open  = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+        rsi_close = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
     }  //---
 
-    bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_mid     = iBands(0, 0, stddev_period, 1, 0, PRICE_TYPICAL, MODE_MAIN,  1);
-    bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-
-    if (rsi > rsi_max && rsi < rsi_prev) return OP_SELL;
-    if (rsi < rsi_min && rsi > rsi_prev) return OP_BUY;
-    if (rsi > rsi_mid) return  500;
-    if (rsi < rsi_mid) return -500;
+    if (rsi_open > rsi_max/* && rsi_open < rsi_close*/) return OP_SELL;
+    if (rsi_open < rsi_min/* && rsi_open > rsi_close*/) return OP_BUY;
+    if (rsi_open > rsi_mid/* && rsi_open < rsi_close*/) return  500;
+    if (rsi_open < rsi_mid/* && rsi_open > rsi_close*/) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
