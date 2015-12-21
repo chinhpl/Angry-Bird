@@ -37,9 +37,6 @@ uint time_start          = GetTickCount();
 extern int rsi_max       = 200;
 extern int rsi_min       = -100;
 extern int rsi_period    = 9;
-extern int stoch_max     = 80;
-extern int stoch_min     = 20;
-extern int stoch_period  = 5;
 extern int stddev_period = 9;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
@@ -213,7 +210,8 @@ void NewOrdersPlaced()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double stoch = iStochastic(0, 0, stoch_period, 1, 1, MODE_SMA, 0, MODE_MAIN, 0);
+    double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
+    double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
 
     if (indicator == MFI)
     {  //--- Indicator selection
@@ -228,8 +226,8 @@ double IndicatorSignal()
 
     if (rsi_open > rsi_max) return OP_SELL;
     if (rsi_open < rsi_min) return OP_BUY;
-    if (stoch > stoch_max) return  500;
-    if (stoch < stoch_min) return -500;
+    if (rsi_open > rsi_upper) return  500;
+    if (rsi_open < rsi_lower) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
