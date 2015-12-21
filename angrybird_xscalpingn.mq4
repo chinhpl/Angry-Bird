@@ -143,7 +143,7 @@ void Update()
 {
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-        
+
     if (OrdersTotal() == 0)
     {  //--- Resets
         last_buy_price  = 0;
@@ -158,8 +158,10 @@ void Update()
         if (OrderType() == OP_SELL) short_trade = TRUE;
     }
 
-    if (!IsOptimization())
+    if (!IsTesting() || IsVisualMode())
     {  //--- OSD Debug
+        UpdatePipstep();
+
         int time_difference = TimeCurrent() - Time[0];
         Comment("Pipstep: "  + pipstep +
                 " Max Dev: " + max_dev +
@@ -212,7 +214,7 @@ void NewOrdersPlaced()
 double IndicatorSignal()
 {
     double stoch = iStochastic(0, 0, stoch_period, 1, 1, MODE_SMA, 0, MODE_MAIN, 0);
-    
+
     if (indicator == MFI)
     {  //--- Indicator selection
         rsi_open  = iMFI(0, 0, rsi_period, 1);
