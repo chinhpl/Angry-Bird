@@ -23,7 +23,6 @@ double rsi_open          = 0;
 double rsi_close         = 0;
 double tp_dist           = 0;
 double pipstep           = 0;
-double max_dev           = 0;
 int error                = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
@@ -36,12 +35,9 @@ uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
 extern int rsi_max       = 200;
 extern int rsi_min       = -100;
-extern int rsi_period    = 9;
-extern int stoch_max     = 80;
-extern int stoch_min     = 20;
-extern int stoch_period  = 5;
-extern int stddev_period = 9;
-extern double exp_base   = 1.4;
+extern int rsi_period    = 14;
+extern int stddev_period = 14;
+extern double exp_base   = 1.7;
 extern double lots       = 0.01;
 extern I_SIG indicator   = 0;
 
@@ -124,15 +120,15 @@ int start()
     }  //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL)
+    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price + pipstep)
     {
-        UpdatePipstep();
-        if (Bid > last_sell_price + pipstep) SendSell();
+        SendSell();
+        return 0;
     }
-    else if (long_trade && indicator_ == OP_BUY)
+    if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price - pipstep)
     {
-        UpdatePipstep();
-        if (Ask < last_buy_price - pipstep) SendBuy();
+        SendBuy();
+        return 0;
     }  //---
     return 0;
 }
@@ -140,7 +136,17 @@ int start()
 //|                                                                  |
 //+------------------------------------------------------------------+
 void Update()
-{
+{   //--- Grabs highest deviation from one day
+    double max_dev = 0;
+    double stddev  = 0;
+    for (int i = 1440 / Period(); i >= 0; i--)
+    {
+        stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, i);
+        if (stddev > max_dev) max_dev = NormalizeDouble(stddev, Digits);
+    }
+    pipstep = NormalizeDouble(max_dev / stddev, Digits);
+    //---
+    
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
         
@@ -170,28 +176,13 @@ void Update()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void UpdatePipstep()
-{   //--- Grabs highest deviation from one day
-    max_dev = 0;
-    double stddev  = 0;
-    for (int i = 1440 / Period(); i >= 0; i--)
-    {
-        stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, i);
-        if (stddev > max_dev) max_dev = NormalizeDouble(stddev, Digits);
-    }
-    pipstep = NormalizeDouble(max_dev / stddev, Digits);
-    //---
-}
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
 void NewOrdersPlaced()
 {  //--- Prevents bad results showing in tester
     if (IsTesting() && error < 0)
     {
         CloseThisSymbolAll();
 
-        while (AccountBalance() >= initial_deposit - 1)
+        while (AccountBalance() >= initial_deposit / 2)
         {
             error = OrderSend(Symbol(), OP_BUY,
                               AccountLeverage() * (AccountBalance() / Ask), Ask,
@@ -205,14 +196,16 @@ void NewOrdersPlaced()
         ExpertRemove();
         return;
     } //---
+
+    Update();
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double stoch = iStochastic(0, 0, stoch_period, 1, 1, MODE_SMA, 0, MODE_MAIN, 0);
-    
+    double rsi_mid   = (rsi_max + rsi_min) / 2;
+
     if (indicator == MFI)
     {  //--- Indicator selection
         rsi_open  = iMFI(0, 0, rsi_period, 1);
@@ -224,10 +217,10 @@ double IndicatorSignal()
         rsi_close = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
     }  //---
 
-    if (rsi_open > rsi_max) return OP_SELL;
-    if (rsi_open < rsi_min) return OP_BUY;
-    if (stoch > stoch_max) return  500;
-    if (stoch < stoch_min) return -500;
+    if (rsi_open > rsi_max/* && rsi_open < rsi_close*/) return OP_SELL;
+    if (rsi_open < rsi_min/* && rsi_open > rsi_close*/) return OP_BUY;
+    if (rsi_open > rsi_mid/* && rsi_open < rsi_close*/) return  500;
+    if (rsi_open < rsi_mid/* && rsi_open > rsi_close*/) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
