@@ -37,10 +37,11 @@ uint time_start          = GetTickCount();
 extern int rsi_max       = 200;
 extern int rsi_min       = -100;
 extern int rsi_period    = 9;
+extern int rsi_slope     = 0;
 extern int stddev_period = 9;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
-extern I_SIG indicator   = 0;
+extern I_SIG indicator   = 1;
 
 int init()
 {
@@ -77,8 +78,8 @@ int start()
     if (!IsOptimization()) Update();
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
-    Update();
     double indicator_ = IndicatorSignal();
+    Update();
     //---
 
     if (OrdersTotal() == 0)
@@ -157,11 +158,17 @@ void Update()
 
     if (!IsOptimization())
     {  //--- OSD Debug
+        int slope;
+        if (rsi_open > 0) slope = rsi_open  - rsi_close;
+        if (rsi_open < 0) slope = rsi_close - rsi_open;
+        name = slope;
+        
         UpdatePipstep();
 
         int time_difference = TimeCurrent() - Time[0];
         Comment("Pipstep: "  + pipstep +
                 " Max Dev: " + max_dev +
+                " Slope: "   + slope +
                 " Lots: "    + i_lots +
                 " Time: "    + time_difference);
     }  //---
@@ -212,22 +219,25 @@ double IndicatorSignal()
 {
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
+    double rsi_mid;
 
     if (indicator == MFI)
     {  //--- Indicator selection
         rsi_open  = iMFI(0, 0, rsi_period, 1);
         rsi_close = iMFI(0, 0, rsi_period, 2);
+        rsi_mid   = 50;
     }
     else if (indicator == CCI)
     {
         rsi_open  = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
         rsi_close = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+        rsi_mid   = 0;
     }  //---
 
-    if (rsi_open > rsi_max) return OP_SELL;
-    if (rsi_open < rsi_min) return OP_BUY;
-    if (rsi_open > rsi_upper) return  500;
-    if (rsi_open < rsi_lower) return -500;
+    if (rsi_open > rsi_max && rsi_open  - rsi_close < rsi_slope) return OP_SELL;
+    if (rsi_open < rsi_min && rsi_close - rsi_open  < rsi_slope) return OP_BUY;
+    if (rsi_open > rsi_mid && rsi_open  - rsi_close < rsi_slope) return  500;
+    if (rsi_open < rsi_mid && rsi_close - rsi_open  < rsi_slope) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
