@@ -19,8 +19,7 @@ double i_takeprofit      = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
-double rsi_open          = 0;
-double rsi_close         = 0;
+double rsi          = 0;
 double tp_dist           = 0;
 double pipstep           = 0;
 double max_dev           = 0;
@@ -37,7 +36,7 @@ uint time_start          = GetTickCount();
 extern int rsi_max       = 200;
 extern int rsi_min       = -100;
 extern int rsi_period    = 9;
-extern int rsi_slope     = 0;
+extern int rsi_slow      = 1;
 extern int stddev_period = 9;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
@@ -124,13 +123,13 @@ int start()
     //--- Proceeding Trades
     if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price)
     {
-        UpdatePipstep();
-        if (Bid > last_sell_price + pipstep) SendSell();
+        //UpdatePipstep();
+        if (bands_lowest > last_sell_price) SendSell();
     }
     else if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price)
     {
-        UpdatePipstep();
-        if (Ask < last_buy_price - pipstep) SendBuy();
+        //UpdatePipstep();
+        if (bands_highest < last_buy_price) SendBuy();
     }  //---
     return 0;
 }
@@ -158,19 +157,10 @@ void Update()
 
     if (!IsOptimization())
     {  //--- OSD Debug
-        int slope;
-        if (rsi_open > 0) slope = rsi_open  - rsi_close;
-        if (rsi_open < 0) slope = rsi_close - rsi_open;
-        name = slope;
-        
-        UpdatePipstep();
-
         int time_difference = TimeCurrent() - Time[0];
-        Comment("Pipstep: "  + pipstep +
-                " Max Dev: " + max_dev +
-                " Slope: "   + slope +
-                " Lots: "    + i_lots +
-                " Time: "    + time_difference);
+        Comment( "RSI: "  + rsi +
+                " Lots: " + i_lots +
+                " Time: " + time_difference);
     }  //---
 }
 //+------------------------------------------------------------------+
@@ -217,27 +207,42 @@ void NewOrdersPlaced()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
-    double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
+    double rsi_upper;
+    double rsi_lower;
     double rsi_mid;
 
     if (indicator == MFI)
     {  //--- Indicator selection
-        rsi_open  = iMFI(0, 0, rsi_period, 1);
-        rsi_close = iMFI(0, 0, rsi_period, 2);
+        rsi = 0;
+        for (int i = 1; i <= rsi_slow; i++)
+        {
+            rsi += iMFI(0, 0, rsi_period, i);
+        }
+        rsi /= rsi_slow;
         rsi_mid   = 50;
+        rsi_upper = 60;
+        rsi_lower = 40;
     }
     else if (indicator == CCI)
     {
-        rsi_open  = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-        rsi_close = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
-        rsi_mid   = 0;
+        rsi = 0;
+        for (i = 1; i <= rsi_slow; i++)
+        {
+            rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
+        }
+        rsi /= rsi_slow;
+        rsi_mid   =  0;
+        rsi_upper =  50;
+        rsi_lower = -50;
     }  //---
 
-    if (rsi_open > rsi_max && rsi_open  - rsi_close < rsi_slope) return OP_SELL;
-    if (rsi_open < rsi_min && rsi_close - rsi_open  < rsi_slope) return OP_BUY;
-    if (rsi_open > rsi_mid && rsi_open  - rsi_close < rsi_slope) return  500;
-    if (rsi_open < rsi_mid && rsi_close - rsi_open  < rsi_slope) return -500;
+    bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+
+    if (rsi > rsi_max) return OP_SELL;
+    if (rsi < rsi_min) return OP_BUY;
+    if (rsi > rsi_mid) return  500;
+    if (rsi < rsi_mid) return -500;
     return (-1);
 }
 //+------------------------------------------------------------------+
