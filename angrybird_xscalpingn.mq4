@@ -127,15 +127,17 @@ void UpdateIndicator()
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
     }
     rsi /= rsi_slow;
-    double rsi_mid = 0;
+    double rsi_mid   = (rsi_max + rsi_min) / 2;
+    double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
+    double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
 
     bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
     bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
 
-    if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
-    if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > rsi_mid) indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < rsi_mid) indicator_low     = TRUE; else indicator_low     = FALSE;
+    if (rsi > rsi_max)   indicator_highest = TRUE; else indicator_highest = FALSE;
+    if (rsi < rsi_min)   indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
+    if (rsi > rsi_upper) indicator_high    = TRUE; else indicator_high    = FALSE;
+    if (rsi < rsi_lower) indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 //+------------------------------------------------------------------+
 //| SUBROUTINES                                                      |
