@@ -81,6 +81,14 @@ int start()
     Update();
     //---
 
+    if (AccountProfit() >= 0 && OrdersTotal() > 0)
+    {  //--- Cancels
+        if (short_trade && indicator_ ==    -500) CloseThisSymbolAll();
+        if (short_trade && indicator_ ==  OP_BUY) CloseThisSymbolAll();
+        if (long_trade  && indicator_ ==     500) CloseThisSymbolAll();
+        if (long_trade  && indicator_ == OP_SELL) CloseThisSymbolAll();
+    }  //---
+    
     if (OrdersTotal() == 0)
     {  //--- First
         if (indicator_ == OP_BUY)  SendBuy();
@@ -88,49 +96,16 @@ int start()
         return 0;
     }  //---
 
-    if (AccountProfit() >= 0)
-    {  //--- Cancels
-        if (short_trade)
-        {
-            if (indicator_ == OP_BUY)
-            {  //--- Closes sell and opens buy
-                CloseThisSymbolAll();
-                SendBuy();
-                return 0;
-            }
-            if (indicator_ == -500)
-            {  //--- Take
-                CloseThisSymbolAll();
-                return 0;
-            }
-        }
-        if (long_trade)
-        {
-            if (indicator_ == OP_SELL)
-            {  //--- Closes buy and opens sell
-                CloseThisSymbolAll();
-                SendSell();
-                return 0;
-            }
-            if (indicator_ == 500)
-            {  //--- Take
-                CloseThisSymbolAll();
-                return 0;
-            }
-        }
-    }  //---
-
     //--- Proceeding Trades
-    if (short_trade && indicator_ == OP_SELL && Bid > last_sell_price)
-    {
-        //UpdatePipstep();
-        if (bands_lowest > last_sell_price) SendSell();
-    }
-    else if (long_trade && indicator_ == OP_BUY && Ask < last_buy_price)
-    {
-        //UpdatePipstep();
-        if (bands_highest < last_buy_price) SendBuy();
-    }  //---
+    if (short_trade             &&
+        indicator_   == OP_SELL &&
+        bands_lowest > last_sell_price) SendSell();
+        
+    if (long_trade              &&
+        indicator_    == OP_BUY &&
+        bands_highest < last_buy_price) SendBuy();
+    //---
+        
     return 0;
 }
 //+------------------------------------------------------------------+
@@ -158,7 +133,7 @@ void Update()
     if (!IsOptimization())
     {  //--- OSD Debug
         int time_difference = TimeCurrent() - Time[0];
-        Comment( "RSI: "  + rsi +
+        Comment( "RSI: "  + (int) rsi +
                 " Lots: " + i_lots +
                 " Time: " + time_difference);
     }  //---
@@ -207,10 +182,7 @@ void NewOrdersPlaced()
 //+------------------------------------------------------------------+
 double IndicatorSignal()
 {
-    double rsi_upper;
-    double rsi_lower;
     double rsi_mid;
-
     if (indicator == MFI)
     {  //--- Indicator selection
         rsi = 0;
@@ -219,9 +191,7 @@ double IndicatorSignal()
             rsi += iMFI(0, 0, rsi_period, i);
         }
         rsi /= rsi_slow;
-        rsi_mid   = 50;
-        rsi_upper = 60;
-        rsi_lower = 40;
+        rsi_mid = 50;
     }
     else if (indicator == CCI)
     {
@@ -231,9 +201,7 @@ double IndicatorSignal()
             rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
         }
         rsi /= rsi_slow;
-        rsi_mid   =  0;
-        rsi_upper =  50;
-        rsi_lower = -50;
+        rsi_mid = 0;
     }  //---
 
     bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
@@ -241,6 +209,7 @@ double IndicatorSignal()
 
     if (rsi > rsi_max) return OP_SELL;
     if (rsi < rsi_min) return OP_BUY;
+    
     if (rsi > rsi_mid) return  500;
     if (rsi < rsi_mid) return -500;
     return (-1);
