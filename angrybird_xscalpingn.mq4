@@ -13,6 +13,7 @@ double last_sell_price   = 0;
 double lots_multiplier   = 0;
 double rsi               = 0;
 int error                = 0;
+double pipstep = 0;
 int i_test               = 0;
 int lotdecimal           = 2;
 int magic_number         = 2222;
@@ -65,7 +66,7 @@ int start()
     Update();
     //---
 
-    if (AccountProfit() >= 0 && OrdersTotal() > 0)
+    if (AccountProfit() > 0 && OrdersTotal() > 0)
     {  //--- Cancels
         if (short_trade && indicator_low)  CloseThisSymbolAll();
         if (long_trade  && indicator_high) CloseThisSymbolAll();
@@ -81,11 +82,13 @@ int start()
     //--- Proceeding Trades
     if (short_trade       &&
         indicator_highest &&
-        bands_lowest > last_sell_price) SendSell();
+        bands_lowest > last_sell_price
+        ) SendSell();
         
     if (long_trade       &&
         indicator_lowest &&
-        bands_highest < last_buy_price) SendBuy();
+        bands_highest < last_buy_price
+        ) SendBuy();
     //---
         
     return 0;
@@ -113,9 +116,9 @@ void Update()
     if (!IsOptimization())
     {  //--- OSD Debug
         int time_difference = TimeCurrent() - Time[0];
-        Comment( "RSI: "  + (int) rsi +
-                " Lots: " + i_lots +
-                " Time: " + time_difference);
+        Comment( "RSI: "      + (int) rsi +
+                " Lots: "     + i_lots +
+                " Time: "     + time_difference);
     }  //---
 }
 
@@ -131,8 +134,10 @@ void UpdateIndicator()
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
 
-    bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    //bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    //bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    bands_highest = iCustom(0, 0, "Bands", stddev_period, 0, 2, 1, 1);
+    bands_lowest  = iCustom(0, 0, "Bands", stddev_period, 0, 2, 2, 1);
 
     if (rsi > rsi_max)   indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
