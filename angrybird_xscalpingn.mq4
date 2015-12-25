@@ -6,6 +6,7 @@ bool indicator_low       = FALSE;
 bool indicator_lowest    = FALSE;
 double bands_highest     = 0;
 double bands_lowest      = 0;
+double bands_mid         = 0;
 double i_lots            = 0;
 double i_takeprofit      = 0;
 double last_buy_price    = 0;
@@ -26,8 +27,8 @@ uint time_start          = GetTickCount();
 extern int rsi_max       = 150;
 extern int rsi_min       = -100;
 extern int rsi_period    = 13;
-extern int rsi_slow      = 5;
 extern int stddev_period = 11;
+extern int rsi_slow      = 5;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
 
@@ -43,9 +44,13 @@ int init()
     {
         last_buy_price  = FindLastBuyPrice();
         last_sell_price = FindLastSellPrice();
+        UpdateIndicator();
         Update();
         NewOrdersPlaced();
     }
+
+    ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
+    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);
     return 0;
 }
 
@@ -114,11 +119,14 @@ void Update()
     }
 
     if (!IsOptimization())
-    {  //--- OSD Debug
+    {  
+        ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
+        ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
+        //--- OSD Debug
         int time_difference = TimeCurrent() - Time[0];
-        Comment( "RSI: "      + (int) rsi +
-                " Lots: "     + i_lots +
-                " Time: "     + time_difference);
+        Comment( "RSI: "       + (int) rsi     +
+                " Lots: "      + i_lots        +
+                " Time: "      + time_difference);
     }  //---
 }
 
@@ -133,11 +141,14 @@ void UpdateIndicator()
     double rsi_mid   = (rsi_max + rsi_min) / 2;
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
+    
+    double sma    =     iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    double stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
 
-    //bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    //bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-    bands_highest = iCustom(0, 0, "Bands", stddev_period, 0, 2, 1, 1);
-    bands_lowest  = iCustom(0, 0, "Bands", stddev_period, 0, 2, 2, 1);
+//  bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+//  bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    bands_highest = NormalizeDouble(sma + (1 / stddev), Digits);
+    bands_lowest  = NormalizeDouble(sma - (1 / stddev), Digits);
 
     if (rsi > rsi_max)   indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
