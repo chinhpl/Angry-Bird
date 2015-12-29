@@ -6,7 +6,6 @@ bool indicator_low       = FALSE;
 bool indicator_lowest    = FALSE;
 double bands_highest     = 0;
 double bands_lowest      = 0;
-double bands_mid         = 0;
 double i_lots            = 0;
 double i_takeprofit      = 0;
 double last_buy_price    = 0;
@@ -15,7 +14,7 @@ double lots_multiplier   = 0;
 double rsi               = 0;
 int error                = 0;
 double pipstep = 0;
-int i_test               = 0;
+int iterations           = 0;
 int lotdecimal           = 2;
 int magic_number         = 2222;
 int previous_time        = 0;
@@ -39,7 +38,6 @@ int init()
         if (rsi_min > rsi_max) ExpertRemove();
         initial_deposit = AccountBalance();
     }
-
     if (OrdersTotal() != 0)
     {
         last_buy_price  = FindLastBuyPrice();
@@ -48,9 +46,6 @@ int init()
         Update();
         NewOrdersPlaced();
     }
-
-    ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
-    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);
     return 0;
 }
 
@@ -58,7 +53,7 @@ int deinit()
 {
     time_elapsed = GetTickCount() - time_start;
     Print("Time Elapsed: " + time_elapsed);
-    Print("Iterations: "   + i_test);
+    Print("Iterations: "   + iterations);
     return 0;
 }
 
@@ -67,8 +62,13 @@ int start()
     if (!IsOptimization()) Update();
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
-    UpdateIndicator();
-    Update();
+    //--- Updates indicator only when necessary
+    if (OrdersTotal() == 0 || Bid > last_sell_price || Ask < last_buy_price ||
+        AccountProfit() > 0)
+    {
+        UpdateIndicator();
+        Update();
+    } else return 0;
     //---
 
     if (AccountProfit() > 0 && OrdersTotal() > 0)
@@ -76,7 +76,7 @@ int start()
         if (short_trade && indicator_low)  CloseThisSymbolAll();
         if (long_trade  && indicator_high) CloseThisSymbolAll();
     }  //---
-    
+
     if (OrdersTotal() == 0)
     {  //--- First
         if (indicator_lowest)  SendBuy();
@@ -85,17 +85,12 @@ int start()
     }  //---
 
     //--- Proceeding Trades
-    if (short_trade       &&
-        indicator_highest &&
-        bands_lowest > last_sell_price
-        ) SendSell();
-        
-    if (long_trade       &&
-        indicator_lowest &&
-        bands_highest < last_buy_price
-        ) SendBuy();
+    if (short_trade && indicator_highest && bands_lowest  > last_sell_price)
+        SendSell();
+    if (long_trade  && indicator_lowest  && bands_highest < last_buy_price)
+        SendBuy();
     //---
-        
+
     return 0;
 }
 
@@ -112,16 +107,14 @@ void Update()
         short_trade     = FALSE;
     }  //---
     else
-    {
-        error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    {   error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY)  long_trade  = TRUE;
         if (OrderType() == OP_SELL) short_trade = TRUE;
     }
 
     if (!IsOptimization())
-    {  
-        ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
-        ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
+    {
+        UpdateIndicator();
         //--- OSD Debug
         int time_difference = TimeCurrent() - Time[0];
         Comment( "RSI: "       + (int) rsi     +
@@ -134,26 +127,30 @@ void UpdateIndicator()
 {
     rsi = 0;
     for (int i = 1; i <= rsi_slow; i++)
-    {
+    {   iterations++;
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
-    }
-    rsi /= rsi_slow;
+    }   rsi /= rsi_slow;
+
     double rsi_mid   = (rsi_max + rsi_min) / 2;
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
-    
-    double sma    =     iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
-    double stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
 
-//  bands_highest = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-//  bands_lowest  = iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-    bands_highest = NormalizeDouble(sma + (1 / stddev), Digits);
-    bands_lowest  = NormalizeDouble(sma - (1 / stddev), Digits);
+    double sma =
+                 iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    double stddev =
+             iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
 
-    if (rsi > rsi_max)   indicator_highest = TRUE; else indicator_highest = FALSE;
-    if (rsi < rsi_min)   indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > rsi_upper) indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < rsi_lower) indicator_low     = TRUE; else indicator_low     = FALSE;
+    bands_highest = NormalizeDouble(sma + 1 / stddev, Digits);
+    bands_lowest  = NormalizeDouble(sma - 1 / stddev, Digits);
+
+    if (rsi > rsi_max) indicator_highest = TRUE;
+                  else indicator_highest = FALSE;
+    if (rsi < rsi_min) indicator_lowest  = TRUE;
+                  else indicator_lowest  = FALSE;
+    if (rsi > 0)       indicator_high    = TRUE;
+                  else indicator_high    = FALSE;
+    if (rsi < 0)       indicator_low     = TRUE;
+                  else indicator_low     = FALSE;
 }
 //+------------------------------------------------------------------+
 //| SUBROUTINES                                                      |
@@ -161,12 +158,14 @@ void UpdateIndicator()
 void CloseThisSymbolAll()
 {
     for (int i = OrdersTotal() - 1; i >= 0; i--)
-    {   error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-            
+    {   iterations++;
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY)
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+            error =
+                OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
         if (OrderType() == OP_SELL)
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+            error =
+                OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     Update();
 }
@@ -177,10 +176,10 @@ double FindLastBuyPrice()
     int oldticketnumber;
     int ticketnumber = 0;
     for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--)
-    {
+    {   iterations++;
         error = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
-        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number &&
-            OrderType() == OP_BUY)
+        if (OrderSymbol() == Symbol() &&
+            OrderMagicNumber() == magic_number && OrderType() == OP_BUY)
         {
             oldticketnumber = OrderTicket();
             if (oldticketnumber > ticketnumber)
@@ -199,10 +198,10 @@ double FindLastSellPrice()
     int oldticketnumber;
     int ticketnumber = 0;
     for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--)
-    {
+    {   iterations++;
         error = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
-        if (OrderSymbol() == Symbol() && OrderMagicNumber() == magic_number &&
-            OrderType() == OP_SELL)
+        if (OrderSymbol() == Symbol() &&
+            OrderMagicNumber() == magic_number && OrderType() == OP_SELL)
         {
             oldticketnumber = OrderTicket();
             if (oldticketnumber > ticketnumber)
@@ -239,14 +238,15 @@ void NewOrdersPlaced()
         while (AccountBalance() >= initial_deposit - 1)
         {
             error = OrderSend(Symbol(), OP_BUY,
-                              AccountLeverage() * (AccountBalance() / Ask), Ask,
-                              slip, 0, 0, name, magic_number, 0, 0);
+                              AccountLeverage() * (AccountBalance() / Ask),
+                              Ask, slip, 0, 0, name, magic_number, 0, 0);
 
-            error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
             error =
-                OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
+                OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip,
+                               clrMagenta);
         }
 
         ExpertRemove();
-    } //---
+    }  //---
 }
