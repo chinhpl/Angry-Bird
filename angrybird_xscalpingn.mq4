@@ -46,7 +46,6 @@ int init()
 int deinit()
 {
     time_elapsed = GetTickCount() - time_start;
-
     Print("Time Elapsed: " + time_elapsed);
     Print("Iterations: "   + iterations);
     return 0;
@@ -67,8 +66,7 @@ int start()
         UpdateIndicator();
         Update();
     }
-    else
-        return 0;
+    else return 0;
     //---
 
     //--- Closes orders
@@ -102,26 +100,27 @@ void Update()
 {
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-
+    //--- Resets
     if (OrdersTotal() == 0)
-    {  //--- Resets
+    {
         last_buy_price  = 0;
         last_sell_price = 0;
         long_trade      = FALSE;
         short_trade     = FALSE;
-    }  //---
+    }
     else
     {
         error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY) long_trade = TRUE;
         if (OrderType() == OP_SELL) short_trade = TRUE;
     }
-
+    //--- OSD Debug
     if (!IsOptimization())
-    {  //--- OSD Debug
+    {
         int time_difference = TimeCurrent() - Time[0];
         Comment(" Lots: " + i_lots + " Time: " + time_difference);
-    }  //---
+    } 
+    //---
 }
 
 void UpdateIndicator()
@@ -157,7 +156,6 @@ void CloseThisSymbolAll()
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         iterations++;
-
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY)
             error =
@@ -232,15 +230,11 @@ void NewOrdersPlaced()
         while (AccountBalance() >= initial_deposit - 1)
         {
             error = OrderSend(Symbol(), OP_BUY,
-                              AccountBalance() / Ask,
+                              AccountLeverage() * AccountFreeMargin() / Ask,
                               Ask, slip, 0, 0, name, magic_number, 0, 0);
 
-            error =
-                OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-            error =
-                OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrMagenta);
+            CloseThisSymbolAll();
         }
-
         ExpertRemove();
     }
     //---
