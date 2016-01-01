@@ -60,7 +60,15 @@ int start()
     //---
 
     //--- Updates only when necessary
-    UpdateBands();    
+    UpdateBands();
+    
+    if (OrdersTotal() > 0 && AccountProfit() < 0 && long_trade &&
+        bands_lowest > last_buy_price)
+        return 0;
+    if (OrdersTotal() > 0 && AccountProfit() < 0 && short_trade &&
+        bands_highest < last_buy_price)
+        return 0;
+    
     if (OrdersTotal() == 0 || AccountProfit() > 0 ||
         bands_lowest > last_sell_price || bands_highest < last_buy_price)
     {
