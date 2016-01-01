@@ -40,6 +40,9 @@ int init()
         Update();
         NewOrdersPlaced();
     }
+    
+    ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
+    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);    
     return 0;
 }
 
@@ -109,6 +112,9 @@ void Update()
     //--- OSD Debug
     if (!IsOptimization())
     {
+        ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
+        ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
+        
         int time_difference = TimeCurrent() - Time[0];
         Comment(" Lots: " + i_lots + " Time: " + time_difference);
     }
@@ -127,12 +133,18 @@ void UpdateIndicator()
 
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
-
+/*
     bands_highest =
         iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
     bands_lowest =
         iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-
+*/
+    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    int low_index  =  iLowest(0, 0, MODE_LOW,  stddev_period, 1);
+    
+    bands_highest = iHigh(0, 0, high_index);
+    bands_lowest =   iLow(0, 0,  low_index);
+    
     if (rsi > rsi_max)   indicator_highest = TRUE;
     else                 indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE;
