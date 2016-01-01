@@ -133,12 +133,7 @@ void UpdateIndicator()
 
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
-/*
-    bands_highest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_lowest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-*/
+    
     int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
     int low_index  =  iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     
