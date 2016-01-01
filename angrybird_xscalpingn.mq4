@@ -17,7 +17,7 @@ int iterations           = 0;
 int lotdecimal           = 2;
 int magic_number         = 2222;
 int previous_time        = 0;
-int slip                 = 1000;
+int slip                 = 100;
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
@@ -60,8 +60,9 @@ int start()
     //---
 
     //--- Updates only when necessary
-    if (OrdersTotal() == 0 || Bid > last_sell_price || Ask < last_buy_price ||
-        AccountProfit() > 0)
+    UpdateBands();    
+    if (OrdersTotal() == 0 || AccountProfit() > 0 ||
+        bands_lowest > last_sell_price || bands_highest < last_buy_price)
     {
         UpdateIndicator();
         Update();
@@ -118,8 +119,8 @@ void Update()
     if (!IsOptimization())
     {
         int time_difference = TimeCurrent() - Time[0];
-        Comment(" Lots: " + i_lots + " Time: " + time_difference);
-    } 
+        Comment(" Lots: "     + i_lots + " Time: " + time_difference);
+    }
     //---
 }
 
@@ -135,12 +136,7 @@ void UpdateIndicator()
 
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
-
-    bands_highest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_lowest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-
+    
     if (rsi > rsi_max)   indicator_highest = TRUE;
     else                 indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE;
@@ -151,91 +147,84 @@ void UpdateIndicator()
     else                 indicator_low     = FALSE;
 }
 
-void CloseThisSymbolAll()
+void UpdateBands()
 {
-    for (int i = OrdersTotal() - 1; i >= 0; i--)
-    {
-        iterations++;
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderType() == OP_BUY)
-            error =
-                OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-        if (OrderType() == OP_SELL)
-            error =
-                OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+    bands_highest =
+        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_lowest =
+        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+}
+
+void CloseThisSymbolAll() {
+  for (int i = OrdersTotal() - 1; i >= 0; i--) {
+    iterations++;
+    error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+    if (OrderType() == OP_BUY)
+      error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+    if (OrderType() == OP_SELL)
+      error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+  }
+  Update();
+}
+
+double FindLastBuyPrice() {
+  double oldorderopenprice;
+  int oldticketnumber;
+  int ticketnumber = 0;
+  for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--) {
+    iterations++;
+    error = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
+    oldticketnumber = OrderTicket();
+    if (oldticketnumber > ticketnumber) {
+      oldorderopenprice = OrderOpenPrice();
+      ticketnumber = oldticketnumber;
     }
-    Update();
+  }
+  return (oldorderopenprice);
 }
 
-double FindLastBuyPrice()
-{
-    double oldorderopenprice;
-    int oldticketnumber;
-    int ticketnumber = 0;
-    for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--)
-    {
-        iterations++;
-        error           = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
-        oldticketnumber = OrderTicket();
-        if (oldticketnumber > ticketnumber)
-        {
-            oldorderopenprice = OrderOpenPrice();
-            ticketnumber      = oldticketnumber;
-        }
+double FindLastSellPrice() {
+  double oldorderopenprice;
+  int oldticketnumber;
+  int ticketnumber = 0;
+  for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--) {
+    iterations++;
+    error = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
+    oldticketnumber = OrderTicket();
+    if (oldticketnumber > ticketnumber) {
+      oldorderopenprice = OrderOpenPrice();
+      ticketnumber = oldticketnumber;
     }
-    return (oldorderopenprice);
+  }
+  return (oldorderopenprice);
 }
 
-double FindLastSellPrice()
-{
-    double oldorderopenprice;
-    int oldticketnumber;
-    int ticketnumber = 0;
-    for (int cnt = OrdersTotal() - 1; cnt >= 0; cnt--)
-    {
-        iterations++;
-        error           = OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES);
-        oldticketnumber = OrderTicket();
-        if (oldticketnumber > ticketnumber)
-        {
-            oldorderopenprice = OrderOpenPrice();
-            ticketnumber      = oldticketnumber;
-        }
+void SendBuy() {
+  error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
+                    magic_number, 0, clrLimeGreen);
+  last_buy_price = Ask;
+  NewOrdersPlaced();
+}
+
+void SendSell() {
+  error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+                    magic_number, 0, clrHotPink);
+  last_sell_price = Bid;
+  NewOrdersPlaced();
+}
+
+void NewOrdersPlaced() {
+  //--- Prevents bad results showing in tester
+  if (IsTesting() && error < 0) {
+    CloseThisSymbolAll();
+    while (AccountBalance() >= initial_deposit - 1) {
+      error = OrderSend(Symbol(), OP_BUY,
+                        AccountLeverage() * AccountFreeMargin() / Ask, Ask,
+                        slip, 0, 0, name, magic_number, 0, 0);
+
+      CloseThisSymbolAll();
     }
-    return (oldorderopenprice);
-}
-
-void SendBuy()
-{
-    error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                      magic_number, 0, clrLimeGreen);
-    last_buy_price = Ask;
-    NewOrdersPlaced();
-}
-
-void SendSell()
-{
-    error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
-                      magic_number, 0, clrHotPink);
-    last_sell_price = Bid;
-    NewOrdersPlaced();
-}
-
-void NewOrdersPlaced()
-{
-    //--- Prevents bad results showing in tester
-    if (IsTesting() && error < 0)
-    {
-        CloseThisSymbolAll();
-        while (AccountBalance() >= initial_deposit - 1)
-        {
-            error = OrderSend(Symbol(), OP_BUY,
-                              AccountLeverage() * AccountFreeMargin() / Ask,
-                              Ask, slip, 0, 0, name, magic_number, 0, 0);
-
-            CloseThisSymbolAll();
-        }
-        ExpertRemove();
-    }
-    //---
+    ExpertRemove();
+  }
+  //---
 }
