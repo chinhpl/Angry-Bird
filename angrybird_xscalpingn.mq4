@@ -57,25 +57,8 @@ int start()
     if (!IsOptimization()) Update();
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
-    //---
-
-    //--- Updates only when necessary
-    UpdateBands();
-    
-    if (OrdersTotal() > 0 && AccountProfit() < 0 && long_trade &&
-        bands_lowest > last_buy_price)
-        return 0;
-    if (OrdersTotal() > 0 && AccountProfit() < 0 && short_trade &&
-        bands_highest < last_buy_price)
-        return 0;
-    
-    if (OrdersTotal() == 0 || AccountProfit() > 0 ||
-        bands_lowest > last_sell_price || bands_highest < last_buy_price)
-    {
-        UpdateIndicator();
-        Update();
-    }
-    else return 0;
+    UpdateIndicator();
+    Update();
     //---
 
     //--- Closes orders
@@ -145,6 +128,11 @@ void UpdateIndicator()
     double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
     
+    bands_highest =
+        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    bands_lowest =
+        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    
     if (rsi > rsi_max)   indicator_highest = TRUE;
     else                 indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE;
@@ -154,15 +142,6 @@ void UpdateIndicator()
     if (rsi < rsi_lower) indicator_low     = TRUE;
     else                 indicator_low     = FALSE;
 }
-
-void UpdateBands()
-{
-    bands_highest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    bands_lowest =
-        iBands(0, 0, stddev_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
-}
-
 void CloseThisSymbolAll() {
   for (int i = OrdersTotal() - 1; i >= 0; i--) {
     iterations++;
