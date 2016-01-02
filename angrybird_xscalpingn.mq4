@@ -135,10 +135,10 @@ void UpdateIndicator()
     double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
     
     int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    int low_index  =  iLowest(0, 0, MODE_LOW,  stddev_period, 1);
+    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     
     bands_highest = iHigh(0, 0, high_index);
-    bands_lowest =   iLow(0, 0,  low_index);
+    bands_lowest  = iLow(0, 0, low_index);
     
     if (rsi > rsi_max)   indicator_highest = TRUE;
     else                 indicator_highest = FALSE;
@@ -226,7 +226,7 @@ void NewOrdersPlaced()
         while (AccountBalance() >= initial_deposit - 1)
         {
             error = OrderSend(Symbol(), OP_BUY,
-                              AccountLeverage() * AccountFreeMargin() / Ask,
+                              AccountFreeMargin() / Ask,
                               Ask, slip, 0, 0, name, magic_number, 0, 0);
 
             CloseThisSymbolAll();
