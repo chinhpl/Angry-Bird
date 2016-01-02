@@ -57,9 +57,20 @@ int deinit()
 int start()
 {
     //--- Works only at the first tick of a new bar
-    if (!IsOptimization()) Update();
+    if (!IsTesting() || IsVisualMode()) Update();
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
+    //---
+    
+    //--- Idle conditions
+    if (OrdersTotal() > 0)
+    {
+        if (AccountProfit() <= 0)
+        {
+            if (long_trade  && Bid > last_buy_price ) return 0;
+            if (short_trade && Ask < last_sell_price) return 0;
+        }
+    }
     UpdateIndicator();
     Update();
     //---
@@ -67,24 +78,24 @@ int start()
     //--- Closes orders
     if (AccountProfit() > 0 && OrdersTotal() > 0)
     {
-        if (short_trade && indicator_low) CloseThisSymbolAll();
-        if (long_trade && indicator_high) CloseThisSymbolAll();
+        if (short_trade && indicator_low ) CloseThisSymbolAll();
+        if (long_trade  && indicator_high) CloseThisSymbolAll();
     }
     //---
 
     //--- First
     if (OrdersTotal() == 0)
     {
-        if (indicator_lowest) SendBuy();
+        if (indicator_lowest ) SendBuy();
         if (indicator_highest) SendSell();
         return 0;
     }
     //---
 
     //--- Proceeding Trades
-    if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+    if (short_trade && indicator_highest && bands_lowest  > last_sell_price)
         SendSell();
-    if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+    if (long_trade  && indicator_lowest  && bands_highest < last_buy_price )
         SendBuy();
     //---
 
@@ -110,7 +121,7 @@ void Update()
         if (OrderType() == OP_SELL) short_trade = TRUE;
     }
     //--- OSD Debug
-    if (!IsOptimization())
+    if (!IsTesting() || IsVisualMode())
     {
         ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
         ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
