@@ -57,7 +57,11 @@ int deinit()
 int start()
 {
     //--- Works only at the first tick of a new bar
-    if (!IsTesting() || IsVisualMode()) Update();
+    if (!IsTesting() || IsVisualMode())
+    {
+        UpdateIndicator();
+        Update();
+    }
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
     //---
@@ -138,7 +142,8 @@ void UpdateIndicator()
     for (int i = 1; i <= rsi_slow; i++)
     {
         iterations++;
-        rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
+        rsi += //iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
+               iMFI(0, 0, rsi_period, i);
     }
     rsi /= rsi_slow;
 
@@ -155,9 +160,9 @@ void UpdateIndicator()
     else                 indicator_highest = FALSE;
     if (rsi < rsi_min)   indicator_lowest  = TRUE;
     else                 indicator_lowest  = FALSE;
-    if (rsi > rsi_upper) indicator_high    = TRUE;
+    if (rsi > 50) indicator_high    = TRUE;
     else                 indicator_high    = FALSE;
-    if (rsi < rsi_lower) indicator_low     = TRUE;
+    if (rsi < 50) indicator_low     = TRUE;
     else                 indicator_low     = FALSE;
 }
 void CloseThisSymbolAll()
