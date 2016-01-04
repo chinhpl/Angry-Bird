@@ -91,6 +91,7 @@ void Update()
     //--- OSD Debug
     if (!IsTesting() || IsVisualMode())
     {
+        UpdateIndicator();
         ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
         ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
         
@@ -111,8 +112,8 @@ void UpdateIndicator()
     for (int i = 1; i <= rsi_slow; i++)
     {
         iterations++;
-        rsi += //iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
-               iMFI(0, 0, rsi_period, i);
+        rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
+               //iMFI(0, 0, rsi_period, i);
     }
     rsi /= rsi_slow;
     
@@ -123,8 +124,8 @@ void UpdateIndicator()
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > 50)      indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < 50)      indicator_low     = TRUE; else indicator_low     = FALSE;
+    if (rsi > 0)       indicator_high    = TRUE; else indicator_high    = FALSE;
+    if (rsi < 0)       indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 
 
