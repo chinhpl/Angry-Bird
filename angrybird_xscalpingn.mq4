@@ -48,13 +48,24 @@ int deinit()
     return 0;
 }
 
+double GetLots()
+{
+    double total = 0;
+    for (int i = 0; i < OrdersTotal(); i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        total += OrderLots();
+    }
+    return total;
+}
+
 int start()
 {
     Update();
     
     //--- Idle conditions - Costly update
     if (previous_time == Time[0]) return 0;
-    //previous_time = Time[0];
+    previous_time = Time[0];
     
     if (OrdersTotal() > 0 && AccountProfit() <= 0)
     {
@@ -117,7 +128,7 @@ void Update()
 void UpdateIndicator()
 {
     rsi = 0;
-    for (int i = 0; i < rsi_slow; i++)
+    for (int i = 1; i <= rsi_slow; i++)
     {
         iterations++;
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
@@ -125,8 +136,8 @@ void UpdateIndicator()
     }
     rsi /= rsi_slow;
     
-    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 0);
-    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 0);
+    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     bands_highest  = iHigh(0, 0, high_index);
     bands_lowest   = iLow(0, 0, low_index);
     
