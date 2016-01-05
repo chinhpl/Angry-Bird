@@ -51,22 +51,27 @@ int deinit()
 int start()
 {
     Update();
+    
     //--- Idle conditions - Costly update
-    if (previous_time == Time[0])
-        return 0;
+    if (previous_time == Time[0]) return 0;
+    //previous_time = Time[0];
+    
     if (OrdersTotal() > 0 && AccountProfit() <= 0)
     {
         if (long_trade  && Bid > last_buy_price ) return 0;
         if (short_trade && Ask < last_sell_price) return 0;
     }
     UpdateIndicator();
-    previous_time = Time[0];
+    //---
+    
     //--- Closes orders
     if (AccountProfit() > 0 && OrdersTotal() > 0)
     {
         if (short_trade && indicator_low ) CloseThisSymbolAll();
         if (long_trade  && indicator_high) CloseThisSymbolAll();
     }
+    //---
+    
     //--- First order
     if (OrdersTotal() == 0)
     {
@@ -74,12 +79,15 @@ int start()
         if (indicator_highest) SendSell();
         return 0;
     }
+    //---
+    
     //--- Proceeding Trades
     if (short_trade && indicator_highest && bands_lowest  > last_sell_price)
         SendSell();
     if (long_trade  && indicator_lowest  && bands_highest < last_buy_price )
         SendBuy();
     //---
+    
     return 0;
 }
 
@@ -109,7 +117,7 @@ void Update()
 void UpdateIndicator()
 {
     rsi = 0;
-    for (int i = 1; i <= rsi_slow; i++)
+    for (int i = 0; i < rsi_slow; i++)
     {
         iterations++;
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
@@ -117,15 +125,15 @@ void UpdateIndicator()
     }
     rsi /= rsi_slow;
     
-    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
+    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 0);
+    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 0);
     bands_highest  = iHigh(0, 0, high_index);
     bands_lowest   = iLow(0, 0, low_index);
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > 0)       indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < 0)       indicator_low     = TRUE; else indicator_low     = FALSE;
+    if (rsi > 0      ) indicator_high    = TRUE; else indicator_high    = FALSE;
+    if (rsi < 0      ) indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 
 
@@ -133,7 +141,14 @@ void UpdateTradeStatus()
 {   
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
     
-    if (OrderType() == OP_SELL)
+    if (OrdersTotal() == 0)
+    {
+        short_trade = FALSE;
+        long_trade  = FALSE;
+        last_buy_price  = 0;
+        last_sell_price = 0;
+    }
+    else if (OrderType() == OP_SELL)
     {
         short_trade = TRUE;
         long_trade  = FALSE;
@@ -145,13 +160,6 @@ void UpdateTradeStatus()
         short_trade = FALSE;
         long_trade  = TRUE;
         last_buy_price  = OrderOpenPrice();
-        last_sell_price = 0;
-    }
-    else if (OrdersTotal() == 0)
-    {
-        short_trade = FALSE;
-        long_trade  = FALSE;
-        last_buy_price  = 0;
         last_sell_price = 0;
     }
     else
