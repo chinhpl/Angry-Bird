@@ -67,7 +67,7 @@ int start()
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
     
-    if (OrdersTotal() > 0 && AccountProfit() <= 0)
+    if (OrdersTotal() > 0 && AccountProfit() < 0)
     {
         if (long_trade  && Bid > last_buy_price ) return 0;
         if (short_trade && Ask < last_sell_price) return 0;
@@ -76,10 +76,10 @@ int start()
     //---
     
     //--- Closes orders
-    if (AccountProfit() > 0 && OrdersTotal() > 0)
+    if (AccountProfit() >= 0 && OrdersTotal() > 0)
     {
-        if (short_trade && indicator_low ) CloseThisSymbolAll();
-        if (long_trade  && indicator_high) CloseThisSymbolAll();
+        if (short_trade && indicator_lowest ) CloseThisSymbolAll();
+        if (long_trade  && indicator_highest) CloseThisSymbolAll();
     }
     //---
     
@@ -140,11 +140,13 @@ void UpdateIndicator()
     int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     bands_highest  = iHigh(0, 0, high_index);
     bands_lowest   = iLow(0, 0, low_index);
+    //bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    //bands_lowest  = bands_highest;
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > 0      ) indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < 0      ) indicator_low     = TRUE; else indicator_low     = FALSE;
+    if (rsi > 0     )  indicator_high    = TRUE; else indicator_high    = FALSE;
+    if (rsi < 0     )  indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 
 
