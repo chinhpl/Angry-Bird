@@ -125,8 +125,8 @@ void UpdateIndicator()
     }
     rsi /= rsi_slow;
     
-    double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
-    double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
+    double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
+    double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
     
     int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
     int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
@@ -135,8 +135,8 @@ void UpdateIndicator()
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > 0     )  indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < 0     )  indicator_low     = TRUE; else indicator_low     = FALSE;
+    if (rsi > rsi_hi ) indicator_high    = TRUE; else indicator_high    = FALSE;
+    if (rsi < rsi_low) indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 
 
