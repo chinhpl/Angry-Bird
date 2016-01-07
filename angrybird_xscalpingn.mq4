@@ -48,17 +48,6 @@ int deinit()
     return 0;
 }
 
-double GetLots()
-{
-    double total = 0;
-    for (int i = 0; i < OrdersTotal(); i++)
-    {
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        total += OrderLots();
-    }
-    return total;
-}
-
 int start()
 {
     Update();
@@ -78,8 +67,8 @@ int start()
     //--- Closes orders
     if (AccountProfit() >= 0 && OrdersTotal() > 0)
     {
-        if (short_trade && indicator_lowest ) CloseThisSymbolAll();
-        if (long_trade  && indicator_highest) CloseThisSymbolAll();
+        if (short_trade && indicator_low ) CloseThisSymbolAll();
+        if (long_trade  && indicator_high) CloseThisSymbolAll();
     }
     //---
     
@@ -136,12 +125,13 @@ void UpdateIndicator()
     }
     rsi /= rsi_slow;
     
+    double rsi_upper = (rsi_max + rsi_max + rsi_min) / 3;
+    double rsi_lower = (rsi_max + rsi_min + rsi_min) / 3;
+    
     int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
     int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     bands_highest  = iHigh(0, 0, high_index);
     bands_lowest   = iLow(0, 0, low_index);
-    //bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
-    //bands_lowest  = bands_highest;
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
