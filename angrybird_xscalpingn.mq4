@@ -18,6 +18,8 @@ int lotdecimal           = 2;
 int magic_number         = 2222;
 int previous_time        = 0;
 int slip                 = 100;
+int high_index           = 0;
+int low_index            = 0;
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
@@ -104,12 +106,9 @@ void Update()
         ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
         
         int time_difference = TimeCurrent() - Time[0];
-        Comment("\nLots: "      + i_lots +
-                "\nShort: "     + short_trade +
-                "\nLong: "      + long_trade +
-                "\nLast Sell: " + last_sell_price +
-                "\nLast Buy: "  + last_buy_price +
-                "\nTime: "      + time_difference);
+        Comment("Lots: "       + i_lots     + " " +
+                "Std Period: " + stddev_period * OrdersTotal() + " " +
+                "Time: "       + time_difference);
     }
     //---
 }
@@ -125,13 +124,13 @@ void UpdateIndicator()
     }
     rsi /= rsi_slow;
     
-    double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
-    double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
+    double rsi_hi  = rsi_max / 2;
+    double rsi_low = rsi_min / 2;
     
-    int high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    int low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
-    bands_highest  = iHigh(0, 0, high_index);
-    bands_lowest   = iLow(0, 0, low_index);
+    high_index = iHighest(0, 0, MODE_HIGH, stddev_period * OrdersTotal(), 1);
+    low_index  = iLowest(0, 0, MODE_LOW,  stddev_period * OrdersTotal(), 1);
+    bands_highest = iHigh(0, 0, high_index);
+    bands_lowest  = iLow(0, 0, low_index);
     
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
