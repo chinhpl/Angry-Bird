@@ -20,6 +20,8 @@ int previous_time        = 0;
 int slip                 = 100;
 int high_index           = 0;
 int low_index            = 0;
+int total_orders         = 0;
+double profit            = 0;
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
@@ -52,22 +54,24 @@ int deinit()
 
 int start()
 {
-    Update();
+    UpdateTradeStatus();
+    if (!IsTesting() || IsVisualMode()) Update();
     
     //--- Idle conditions - Costly update
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
     
-    if (OrdersTotal() > 0 && AccountProfit() < 0)
+    if (total_orders > 0 && profit <= 0)
     {
         if (long_trade  && Bid > last_buy_price ) return 0;
         if (short_trade && Ask < last_sell_price) return 0;
     }
     UpdateIndicator();
+    Update();
     //---
     
     //--- Closes orders
-    if (AccountProfit() > 0 && OrdersTotal() > 0)
+    if (profit > 0 && total_orders > 0)
     {
         if (short_trade && indicator_low ) CloseThisSymbolAll();
         if (long_trade  && indicator_high) CloseThisSymbolAll();
@@ -75,7 +79,7 @@ int start()
     //---
     
     //--- First order
-    if (OrdersTotal() == 0)
+    if (total_orders == 0)
     {
         if (indicator_lowest ) SendBuy();
         if (indicator_highest) SendSell();
@@ -97,7 +101,6 @@ void Update()
 {
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    UpdateTradeStatus();
     //--- OSD Debug
     if (!IsTesting() || IsVisualMode())
     {
@@ -107,7 +110,6 @@ void Update()
         
         int time_difference = TimeCurrent() - Time[0];
         Comment("Lots: "       + i_lots     + " " +
-                "Std Period: " + stddev_period * OrdersTotal() + " " +
                 "Time: "       + time_difference);
     }
     //---
@@ -118,17 +120,17 @@ void UpdateIndicator()
     rsi = 0;
     for (int i = 1; i <= rsi_slow; i++)
     {
-        iterations++;
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
                //iMFI(0, 0, rsi_period, i);
     }
     rsi /= rsi_slow;
     
-    double rsi_hi  = rsi_max / 2;
-    double rsi_low = rsi_min / 2;
+    int    rsi_div = (rsi_max - rsi_min) / 4;
+    double rsi_hi  = rsi_max - rsi_div;
+    double rsi_low = rsi_min + rsi_div;
     
-    high_index = iHighest(0, 0, MODE_HIGH, stddev_period * OrdersTotal(), 1);
-    low_index  = iLowest(0, 0, MODE_LOW,  stddev_period * OrdersTotal(), 1);
+    high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
     bands_highest = iHigh(0, 0, high_index);
     bands_lowest  = iLow(0, 0, low_index);
     
@@ -149,6 +151,8 @@ void UpdateTradeStatus()
         long_trade  = FALSE;
         last_buy_price  = 0;
         last_sell_price = 0;
+        total_orders    = 0;
+        profit          = 0;
     }
     else if (OrderType() == OP_SELL)
     {
@@ -156,6 +160,8 @@ void UpdateTradeStatus()
         long_trade  = FALSE;
         last_sell_price = OrderOpenPrice();
         last_buy_price  = 0;
+        total_orders = OrdersTotal();
+        profit       = AccountProfit();
     }
     else if (OrderType() == OP_BUY)
     {
@@ -163,6 +169,8 @@ void UpdateTradeStatus()
         long_trade  = TRUE;
         last_buy_price  = OrderOpenPrice();
         last_sell_price = 0;
+        total_orders = OrdersTotal();
+        profit       = AccountProfit();
     }
     else
     {
@@ -209,7 +217,6 @@ void CloseThisSymbolAll()
 {
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
-        iterations++;
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY)
             error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
@@ -217,4 +224,5 @@ void CloseThisSymbolAll()
             error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     Update();
+    UpdateTradeStatus();
 }
