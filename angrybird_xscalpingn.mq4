@@ -10,18 +10,18 @@ double i_lots            = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
+double profit            = 0;
 double rsi               = 0;
 int error                = 0;
+int high_index           = 0;
 int initial_deposit      = 0;
 int iterations           = 0;
 int lotdecimal           = 2;
+int low_index            = 0;
 int magic_number         = 2222;
 int previous_time        = 0;
 int slip                 = 100;
-int high_index           = 0;
-int low_index            = 0;
 int total_orders         = 0;
-double profit            = 0;
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
@@ -36,11 +36,11 @@ extern double lots       = 0.01;
 int init()
 {
     initial_deposit = AccountBalance();
-    UpdateIndicator();
-    Update();
-    NewOrdersPlaced();
+    UpdateEveryTick();
+    UpdateBeforeOrder();
+    UpdateAfterOrder();
     ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
-    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);    
+    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);
     return 0;
 }
 
@@ -54,165 +54,129 @@ int deinit()
 
 int start()
 {
-    if (!IsTesting() || IsVisualMode()) Update();
-    
-    //--- Idle conditions - Costly update
+    if (!IsTesting() || IsVisualMode()) Debug();
+
+    /* Idle conditions */
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
-    
-    profit = AccountProfit();
-    if (total_orders > 0 && profit <= 0)
-    {
-        if (long_trade  && Bid > last_buy_price ) return 0;
-        if (short_trade && Ask < last_sell_price) return 0;
-    }
-    UpdateIndicator();
-    Update();
-    //---
-    
-    //--- Closes orders
-    if (profit > 0 && total_orders > 0)
-    {
-        if (short_trade && indicator_low ) CloseThisSymbolAll();
-        if (long_trade  && indicator_high) CloseThisSymbolAll();
-    }
-    //---
-    
-    //--- First order
+    UpdateEveryTick();
+
+    /* First order */
     if (total_orders == 0)
     {
-        if (indicator_lowest ) SendBuy();
-        if (indicator_highest) SendSell();
+        UpdateBeforeOrder();
+        if (indicator_lowest) SendOrder(OP_BUY);
+        if (indicator_highest) SendOrder(OP_SELL);
         return 0;
     }
-    //---
-    
-    //--- Proceeding Trades
-    if (short_trade && indicator_highest && bands_lowest  > last_sell_price)
-        SendSell();
-    if (long_trade  && indicator_lowest  && bands_highest < last_buy_price )
-        SendBuy();
-    //---
-    
+
+    /* Closes orders */
+    if (profit > 0 && total_orders > 0)
+    {
+        UpdateBeforeOrder();
+        if (short_trade && indicator_low)
+        {
+            CloseAllOrders();
+            if (indicator_lowest) SendOrder(OP_BUY);
+        }
+        else if (long_trade && indicator_high)
+        {
+            CloseAllOrders();
+            if (indicator_highest) SendOrder(OP_SELL);
+        }
+        return 0;
+    }
+
+    /* Proceeding Orders */
+    if (profit <= 0 && total_orders > 0)
+    {
+        UpdateBeforeOrder();
+
+        if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+            SendOrder(OP_SELL);
+        if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+            SendOrder(OP_BUY);
+    }
+
     return 0;
 }
 
-void Update()
+void UpdateEveryTick()
 {
-    lots_multiplier = MathPow(exp_base, OrdersTotal());
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    //--- OSD Debug
-    if (!IsTesting() || IsVisualMode())
-    {
-        UpdateTradeStatus();
-        UpdateIndicator();
-        ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
-        ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
-        
-        int time_difference = TimeCurrent() - Time[0];
-        Comment("Lots: "       + i_lots     + " " +
-                "Time: "       + time_difference);
-    }
-    //---
+    profit = AccountProfit();
 }
 
-void UpdateIndicator()
+void UpdateBeforeOrder()
 {
     rsi = 0;
     for (int i = 1; i <= rsi_slow; i++)
-    {
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
-               //iMFI(0, 0, rsi_period, i);
-    }
     rsi /= rsi_slow;
-    
-    int    rsi_div = (rsi_max - rsi_min) / 4;
+
+    int rsi_div    = (rsi_max - rsi_min) / 4;
     double rsi_hi  = rsi_max - rsi_div;
     double rsi_low = rsi_min + rsi_div;
-    
-    high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    low_index  = iLowest(0, 0, MODE_LOW,  stddev_period, 1);
+
+    high_index    = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    low_index     = iLowest(0, 0, MODE_LOW, stddev_period, 1);
     bands_highest = iHigh(0, 0, high_index);
     bands_lowest  = iLow(0, 0, low_index);
-    
+
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
     if (rsi > rsi_hi ) indicator_high    = TRUE; else indicator_high    = FALSE;
     if (rsi < rsi_low) indicator_low     = TRUE; else indicator_low     = FALSE;
 }
 
+void UpdateAfterOrder()
+{
+    lots_multiplier = MathPow(exp_base, OrdersTotal());
+    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
 
-void UpdateTradeStatus()
-{   
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-    
     if (OrdersTotal() == 0)
     {
-        short_trade = FALSE;
-        long_trade  = FALSE;
+        short_trade     = FALSE;
+        long_trade      = FALSE;
         last_buy_price  = 0;
         last_sell_price = 0;
         total_orders    = 0;
     }
     else if (OrderType() == OP_SELL)
     {
-        short_trade = TRUE;
-        long_trade  = FALSE;
+        short_trade     = TRUE;
+        long_trade      = FALSE;
         last_sell_price = OrderOpenPrice();
         last_buy_price  = 0;
-        total_orders = OrdersTotal();
+        total_orders    = OrdersTotal();
     }
     else if (OrderType() == OP_BUY)
     {
-        short_trade = FALSE;
-        long_trade  = TRUE;
+        short_trade     = FALSE;
+        long_trade      = TRUE;
         last_buy_price  = OrderOpenPrice();
         last_sell_price = 0;
-        total_orders = OrdersTotal();
+        total_orders    = OrdersTotal();
     }
     else
     {
         Alert("Critical error " + GetLastError());
     }
 }
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void SendBuy()
-{
-    error = OrderSend(Symbol(), OP_BUY, i_lots, Ask, slip, 0, 0, name,
-                      magic_number, 0, clrLimeGreen);
-    NewOrdersPlaced();
-}
 
-void SendSell()
+void SendOrder(int OP_TYPE)
 {
-    error = OrderSend(Symbol(), OP_SELL, i_lots, Bid, slip, 0, 0, name,
+    double price;
+    if (OP_TYPE == OP_SELL) price = Bid;
+    if (OP_TYPE == OP_BUY) price = Ask;
+
+    error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
                       magic_number, 0, clrHotPink);
-    NewOrdersPlaced();
+    if (error == -1) Kill();
+    UpdateAfterOrder();
 }
 
-void NewOrdersPlaced()
-{
-    //--- Prevents bad results showing in tester
-    if (IsTesting() && error < 0)
-    {
-        CloseThisSymbolAll();
-        while (AccountBalance() >= initial_deposit - 1)
-        {
-            error = OrderSend(Symbol(), OP_BUY,
-                              AccountFreeMargin() / Ask,
-                              Ask, slip, 0, 0, name, magic_number, 0, 0);
-
-            CloseThisSymbolAll();
-        }
-        ExpertRemove();
-    }
-    //---
-    UpdateTradeStatus();
-}
-
-void CloseThisSymbolAll()
+void CloseAllOrders()
 {
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
@@ -222,6 +186,34 @@ void CloseThisSymbolAll()
         if (OrderType() == OP_SELL)
             error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
-    Update();
-    UpdateTradeStatus();
+    UpdateAfterOrder();
+}
+
+void Kill()
+{
+    if (IsTesting() && error < 0)
+    {
+        CloseAllOrders();
+        while (AccountBalance() >= initial_deposit - 1)
+        {
+            error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask,
+                              slip, 0, 0, name, magic_number, 0, 0);
+
+            CloseAllOrders();
+        }
+        ExpertRemove();
+    }
+}
+
+void Debug()
+{
+    UpdateEveryTick();
+    UpdateBeforeOrder();
+    UpdateAfterOrder();
+
+    ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
+    ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
+
+    int time_difference = TimeCurrent() - Time[0];
+    Comment("Lots: " + i_lots + " " + "Time: " + time_difference);
 }
