@@ -65,7 +65,7 @@ int start()
     //---
     
     //--- Closes orders
-    if (AccountProfit() >= 0 && OrdersTotal() > 0)
+    if (AccountProfit() > 0 && OrdersTotal() > 0)
     {
         if (short_trade && indicator_low ) CloseThisSymbolAll();
         if (long_trade  && indicator_high) CloseThisSymbolAll();
