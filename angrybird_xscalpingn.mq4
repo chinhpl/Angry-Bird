@@ -54,13 +54,13 @@ int deinit()
 
 int start()
 {
-    UpdateTradeStatus();
     if (!IsTesting() || IsVisualMode()) Update();
     
     //--- Idle conditions - Costly update
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
     
+    profit = AccountProfit();
     if (total_orders > 0 && profit <= 0)
     {
         if (long_trade  && Bid > last_buy_price ) return 0;
@@ -104,6 +104,7 @@ void Update()
     //--- OSD Debug
     if (!IsTesting() || IsVisualMode())
     {
+        UpdateTradeStatus();
         UpdateIndicator();
         ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
         ObjectSet("bands_lowest" , OBJPROP_PRICE1, bands_lowest);
@@ -152,7 +153,6 @@ void UpdateTradeStatus()
         last_buy_price  = 0;
         last_sell_price = 0;
         total_orders    = 0;
-        profit          = 0;
     }
     else if (OrderType() == OP_SELL)
     {
@@ -161,7 +161,6 @@ void UpdateTradeStatus()
         last_sell_price = OrderOpenPrice();
         last_buy_price  = 0;
         total_orders = OrdersTotal();
-        profit       = AccountProfit();
     }
     else if (OrderType() == OP_BUY)
     {
@@ -170,7 +169,6 @@ void UpdateTradeStatus()
         last_buy_price  = OrderOpenPrice();
         last_sell_price = 0;
         total_orders = OrdersTotal();
-        profit       = AccountProfit();
     }
     else
     {
@@ -211,6 +209,7 @@ void NewOrdersPlaced()
         ExpertRemove();
     }
     //---
+    UpdateTradeStatus();
 }
 
 void CloseThisSymbolAll()
