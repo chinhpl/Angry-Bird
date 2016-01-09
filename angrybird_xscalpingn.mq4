@@ -12,6 +12,8 @@ double last_sell_price   = 0;
 double lots_multiplier   = 0;
 double profit            = 0;
 double rsi               = 0;
+double rsi_hi            = 0;
+double rsi_low           = 0;
 int error                = 0;
 int high_index           = 0;
 int initial_deposit      = 0;
@@ -39,6 +41,7 @@ int init()
     UpdateEveryTick();
     UpdateBeforeOrder();
     UpdateAfterOrder();
+    Debug();
     ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
     ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);
     return 0;
@@ -113,9 +116,8 @@ void UpdateBeforeOrder()
         rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
     rsi /= rsi_slow;
 
-    int rsi_div    = (rsi_max - rsi_min) / 4;
-    double rsi_hi  = rsi_max - rsi_div;
-    double rsi_low = rsi_min + rsi_div;
+    rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
+    rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
 
     high_index    = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
     low_index     = iLowest(0, 0, MODE_LOW, stddev_period, 1);
@@ -167,11 +169,21 @@ void UpdateAfterOrder()
 void SendOrder(int OP_TYPE)
 {
     double price;
-    if (OP_TYPE == OP_SELL) price = Bid;
-    if (OP_TYPE == OP_BUY) price = Ask;
+    color order_color;
+    
+    if (OP_TYPE == OP_SELL)
+    {
+        price = Bid;
+        order_color = clrHotPink;
+    }
+    if (OP_TYPE == OP_BUY)
+    {
+        price = Ask;
+        order_color = clrLimeGreen;
+    }
 
     error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
-                      magic_number, 0, clrHotPink);
+                      magic_number, 0, order_color);
     if (error == -1) Kill();
     UpdateAfterOrder();
 }
@@ -215,5 +227,6 @@ void Debug()
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Lots: " + i_lots + " " + "Time: " + time_difference);
+    Comment("Lots: " + i_lots + " " + "Time: " + time_difference + "\n"
+            "RSI Hi / Low: " + rsi_hi + " / " + rsi_low);
 }
