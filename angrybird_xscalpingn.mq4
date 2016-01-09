@@ -89,6 +89,17 @@ int start()
         }
         return 0;
     }
+    error = OrderSelect(total_orders - 1, SELECT_BY_POS, MODE_TRADES);
+    if (total_orders > 1 && OrderProfit() > OrderCommission() * -1)
+    {
+        UpdateBeforeOrder();
+        if (long_trade && indicator_highest && bands_lowest > last_buy_price)
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
+        if (short_trade && indicator_lowest && bands_highest < last_sell_price)
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
+        UpdateAfterOrder();
+        return 0;
+    }
 
     /* Proceeding Orders */
     if (profit <= 0 && total_orders > 0)
