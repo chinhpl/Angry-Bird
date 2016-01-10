@@ -102,16 +102,18 @@ int start()
     }
 
     /* Proceeding Orders */
-    if (profit <= 0 && total_orders > 0)
+    if (short_trade && Bid > last_sell_price)
     {
         UpdateBeforeOrder();
-
-        if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+        if (indicator_highest && bands_lowest > last_sell_price)
             SendOrder(OP_SELL);
-        if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+    }
+    else if (long_trade && Ask < last_buy_price)
+    {
+        UpdateBeforeOrder();
+        if (indicator_lowest && bands_highest < last_buy_price)
             SendOrder(OP_BUY);
     }
-
     return 0;
 }
 
@@ -132,8 +134,8 @@ void UpdateBeforeOrder()
 
     high_index    = iHighest(0, 0, MODE_HIGH, stddev_period * total_orders, 1);
     low_index     = iLowest(0, 0, MODE_LOW, stddev_period * total_orders, 1);
-    bands_highest = iHigh(0, 0, high_index);
-    bands_lowest  = iLow(0, 0, low_index);
+    bands_highest = iHigh(0, 0, high_index) + MarketInfo(0, MODE_SPREAD) * Point;
+    bands_lowest  = iLow(0, 0, low_index) - MarketInfo(0, MODE_SPREAD) * Point;
 
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
