@@ -10,7 +10,8 @@ double i_lots            = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
-double profit            = 0;
+double totoal_profit     = 0;
+double buffer_profit     = 0;
 double rsi               = 0;
 double rsi_hi            = 0;
 double rsi_low           = 0;
@@ -74,7 +75,7 @@ int start()
     }
 
     /* Closes orders */
-    if (profit > 0 && total_orders > 0)
+    if (totoal_profit > 0 - buffer_profit && total_orders > 0)
     {
         UpdateBeforeOrder();
         if (short_trade && indicator_low)
@@ -94,9 +95,15 @@ int start()
     {
         UpdateBeforeOrder();
         if (long_trade && indicator_highest && bands_lowest > last_buy_price)
+        {
             error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
+            buffer_profit += OrderProfit() + OrderCommission(); /* commission * -1*/
+        }
         if (short_trade && indicator_lowest && bands_highest < last_sell_price)
+        {
             error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
+            buffer_profit += OrderProfit() + OrderCommission(); /* commission * -1*/
+        }
         UpdateAfterOrder();
         return 0;
     }
@@ -119,7 +126,7 @@ int start()
 
 void UpdateEveryTick()
 {
-    profit = AccountProfit();
+    totoal_profit = AccountProfit();
 }
 
 void UpdateBeforeOrder()
@@ -156,6 +163,7 @@ void UpdateAfterOrder()
         last_buy_price  = 0;
         last_sell_price = 0;
         total_orders    = 0;
+        buffer_profit   = 0;
     }
     else if (OrderType() == OP_SELL)
     {
@@ -240,7 +248,8 @@ void Debug()
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Lots: " + i_lots + " " + "Time: " + time_difference + "\n" +
-            "RSI Hi / Low: " + rsi_hi + " / " + rsi_low + "\n" +
-            "Std Period: " + (stddev_period * total_orders));
+    Comment("Time: "          + time_difference                  + "\n" +
+            "Lots: "          + i_lots                           + "\n" + 
+            "Profit Buffer: " + buffer_profit                    + "\n" +
+            "Std Period: "    + stddev_period * total_orders     + "\n");
 }
