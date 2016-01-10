@@ -109,8 +109,8 @@ int start()
                     error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
                     buffer_profit += OrderProfit() + OrderCommission();
                     UpdateAfterOrder();
-                    return 0;
                 }
+                return 0;
             }
         }
         if (long_trade && Bid > last_buy_price)
@@ -124,8 +124,8 @@ int start()
                     error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
                     buffer_profit += OrderProfit() + OrderCommission();
                     UpdateAfterOrder();
-                    return 0;
                 }
+                return 0;
             }
         }
     }
@@ -161,8 +161,8 @@ void UpdateBeforeOrder()
     rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
     rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
 
-    high_index    = iHighest(0, 0, MODE_HIGH, stddev_period * total_orders, 1);
-    low_index     = iLowest(0, 0, MODE_LOW, stddev_period * total_orders, 1);
+    high_index    = iHighest(0, 0, MODE_HIGH, stddev_period * 1, 1);
+    low_index     = iLowest(0, 0, MODE_LOW, stddev_period * 1, 1);
     bands_highest = iHigh(0, 0, high_index) + MarketInfo(0, MODE_SPREAD) * Point;
     bands_lowest  = iLow(0, 0, low_index) - MarketInfo(0, MODE_SPREAD) * Point;
 
@@ -272,6 +272,5 @@ void Debug()
     int time_difference = TimeCurrent() - Time[0];
     Comment("Time: "          + time_difference + "\n" +
             "Lots: "          + i_lots          + "\n" + 
-            "Profit Buffer: " + buffer_profit   + "\n" +
-            "STD Period: "    + stddev_period * total_orders + "\n");
+            "Profit Buffer: " + buffer_profit   + "\n");
 }
