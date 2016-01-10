@@ -90,22 +90,38 @@ int start()
         }
         return 0;
     }
-    error = OrderSelect(total_orders - 1, SELECT_BY_POS, MODE_TRADES);
-    if (total_orders > 1 && OrderProfit() > OrderCommission() * -1)
+    if (total_orders > 1)
     {
-        UpdateBeforeOrder();
-        if (long_trade && indicator_highest && bands_lowest > last_buy_price)
+        if (short_trade && Ask < last_sell_price)
         {
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
-            buffer_profit += OrderProfit() + OrderCommission(); /* commission * -1*/
+            error = OrderSelect(total_orders - 1, SELECT_BY_POS, MODE_TRADES);
+            if (OrderProfit() > OrderCommission() * -1)
+            {
+                UpdateBeforeOrder();
+                if (indicator_lowest && bands_highest < last_sell_price)
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
+                    buffer_profit += OrderProfit() + OrderCommission();
+                    UpdateAfterOrder();
+                    return 0;
+                }
+            }
         }
-        if (short_trade && indicator_lowest && bands_highest < last_sell_price)
+        if (long_trade && Bid > last_buy_price)
         {
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
-            buffer_profit += OrderProfit() + OrderCommission(); /* commission * -1*/
+            error = OrderSelect(total_orders - 1, SELECT_BY_POS, MODE_TRADES);
+            if (OrderProfit() > OrderCommission() * -1)
+            {
+                UpdateBeforeOrder();
+                if (indicator_highest && bands_lowest > last_buy_price)
+                {
+                    error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
+                    buffer_profit += OrderProfit() + OrderCommission();
+                    UpdateAfterOrder();
+                    return 0;
+                }
+            }
         }
-        UpdateAfterOrder();
-        return 0;
     }
 
     /* Proceeding Orders */
