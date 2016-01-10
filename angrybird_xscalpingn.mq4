@@ -122,11 +122,13 @@ void UpdateBeforeOrder()
 
     double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
+    
+    double stddev = iStdDev(0, 0, stddev_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
 
-    double high_index    = iHighest(0, 0, MODE_HIGH, stddev_period * total_orders, 1);
-    double low_index     = iLowest(0, 0, MODE_LOW, stddev_period * total_orders, 1);
-    bands_highest = iHigh(0, 0, high_index) + MarketInfo(0, MODE_SPREAD) * Point;
-    bands_lowest  = iLow(0, 0, low_index) - MarketInfo(0, MODE_SPREAD) * Point;
+    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    double low_index = iLowest(0, 0, MODE_LOW, stddev_period, 1);
+    bands_highest = iHigh(0, 0, high_index) + (MarketInfo(0, MODE_SPREAD) * Point) + stddev;
+    bands_lowest  = iLow(0, 0, low_index) - (MarketInfo(0, MODE_SPREAD) * Point) - stddev;
 
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
@@ -233,6 +235,5 @@ void Debug()
     int time_difference = TimeCurrent() - Time[0];
     Comment("Time: "          + time_difference              + "\n" +
             "Lots: "          + i_lots                       + "\n" +
-            "Profit Buffer: " + buffer_profit                + "\n"
-            "STD Period: "    + stddev_period * total_orders + "\n");
+            "Profit Buffer: " + buffer_profit                + "\n");
 }
