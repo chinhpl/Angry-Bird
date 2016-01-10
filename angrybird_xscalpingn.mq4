@@ -242,5 +242,5 @@ void Debug()
     int time_difference = TimeCurrent() - Time[0];
     Comment("Lots: " + i_lots + " " + "Time: " + time_difference + "\n" +
             "RSI Hi / Low: " + rsi_hi + " / " + rsi_low + "\n" +
-            "Std Period: " + stddev_period * total_orders);
+            "Std Period: " + (stddev_period * total_orders));
 }
