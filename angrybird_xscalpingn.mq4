@@ -270,8 +270,8 @@ void Debug()
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Time: "          + time_difference                  + "\n" +
-            "Lots: "          + i_lots                           + "\n" + 
-            "Profit Buffer: " + buffer_profit                    + "\n" +
-            "Std Period: "    + stddev_period * total_orders     + "\n");
+    Comment("Time: "          + time_difference + "\n" +
+            "Lots: "          + i_lots          + "\n" + 
+            "Profit Buffer: " + buffer_profit   + "\n" +
+            "STD Period: "    + stddev_period * total_orders + "\n");
 }
