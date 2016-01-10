@@ -10,7 +10,6 @@ double i_lots            = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
-double totoal_profit     = 0;
 double buffer_profit     = 0;
 double rsi               = 0;
 double rsi_hi            = 0;
@@ -63,8 +62,7 @@ int start()
     /* Idle conditions */
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
-    UpdateEveryTick();
-
+    
     /* First order */
     if (total_orders == 0)
     {
@@ -75,20 +73,28 @@ int start()
     }
 
     /* Closes orders */
-    if (totoal_profit > 0 - buffer_profit && total_orders > 0)
+    if (total_orders > 0)
     {
-        UpdateBeforeOrder();
-        if (short_trade && indicator_low)
+        if (short_trade && Ask < last_sell_price)
         {
-            CloseAllOrders();
-            if (indicator_lowest) SendOrder(OP_BUY);
+            if (AccountProfit() > 0 - buffer_profit)
+            {
+                UpdateBeforeOrder();
+                if (indicator_low) CloseAllOrders();
+                if (indicator_lowest) SendOrder(OP_BUY);
+                return 0;
+            }
         }
-        else if (long_trade && indicator_high)
+        if (long_trade && Bid > last_buy_price)
         {
-            CloseAllOrders();
-            if (indicator_highest) SendOrder(OP_SELL);
+            if (AccountProfit() > 0 - buffer_profit)
+            {
+                UpdateBeforeOrder();
+                if (indicator_high) CloseAllOrders();
+                if (indicator_highest) SendOrder(OP_SELL);
+                return 0;
+            }
         }
-        return 0;
     }
     if (total_orders > 1)
     {
@@ -142,7 +148,7 @@ int start()
 
 void UpdateEveryTick()
 {
-    totoal_profit = AccountProfit();
+    //totoal_profit = AccountProfit();
 }
 
 void UpdateBeforeOrder()
