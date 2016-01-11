@@ -6,9 +6,7 @@ bool long_trade          = FALSE;
 bool short_trade         = FALSE;
 double bands_highest     = 0;
 double bands_lowest      = 0;
-double buffer_profit     = 0;
 double i_lots            = 0;
-double i_std             = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
@@ -38,7 +36,7 @@ int init()
     UpdateAfterOrder();
     Debug();
     ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
-    ObjectCreate("bands_lowest",  OBJ_HLINE, 0, 0, bands_lowest);
+    ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
     return 0;
 }
 
@@ -57,11 +55,11 @@ int start()
     /* Idle conditions */
     if (previous_time == Time[0]) return 0;
     previous_time = Time[0];
+    UpdateBeforeOrder();
 
     /* Closes all orders */
-    if (total_orders > 0 && AccountProfit() > 0 - buffer_profit)
+    if (total_orders > 0 && AccountProfit() > 0)
     {
-        UpdateBeforeOrder();
         if (short_trade && indicator_low) CloseAllOrders();
         if (long_trade && indicator_high) CloseAllOrders();
     }
@@ -69,49 +67,16 @@ int start()
     /* First order */
     if (total_orders == 0)
     {
-        UpdateBeforeOrder();
         if (indicator_lowest) SendOrder(OP_BUY);
         if (indicator_highest) SendOrder(OP_SELL);
         return 0;
     }
 
-    /* Closes last orders */
-    if (total_orders > 1)
-    {
-        error = OrderSelect(total_orders - 1, SELECT_BY_POS, MODE_TRADES);
-        if (OrderProfit() > -OrderCommission())
-        {
-            UpdateBeforeOrder();
-            if (short_trade && indicator_lowest && bands_highest < last_sell_price)
-            {
-                error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrWhiteSmoke);
-                buffer_profit += OrderProfit() + OrderCommission();
-                UpdateAfterOrder();
-                return 0;
-            }
-            if (long_trade && indicator_highest && bands_lowest > last_buy_price)
-            {
-                error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrWhiteSmoke);
-                buffer_profit += OrderProfit() + OrderCommission();
-                UpdateAfterOrder();
-                return 0;
-            }
-        }
-    }
-
     /* Proceeding Orders */
-    if (short_trade && Bid > last_sell_price)
-    {
-        UpdateBeforeOrder();
-        if (indicator_highest && bands_lowest > last_sell_price)
-            SendOrder(OP_SELL);
-    }
-    else if (long_trade && Ask < last_buy_price)
-    {
-        UpdateBeforeOrder();
-        if (indicator_lowest && bands_highest < last_buy_price)
-            SendOrder(OP_BUY);
-    }
+    if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+        SendOrder(OP_SELL);
+    else if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+        SendOrder(OP_BUY);
     return 0;
 }
 
@@ -124,11 +89,13 @@ void UpdateBeforeOrder()
 
     double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
-    
-    double high_index = iHighest(0, 0, MODE_HIGH, i_std, 1);
-    double low_index = iLowest(0, 0, MODE_LOW, i_std, 1);
-    bands_highest = iHigh(0, 0, high_index) + MarketInfo(0, MODE_SPREAD) * Point;
-    bands_lowest  = iLow(0, 0, low_index) - MarketInfo(0, MODE_SPREAD) * Point;
+
+    double spread  = MarketInfo(0, MODE_SPREAD) * Point;
+
+    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period, 1);
+    bands_highest     = iHigh(0, 0, high_index) + spread;
+    bands_lowest      = iLow(0, 0, low_index) - spread;
 
     if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
     if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
@@ -140,7 +107,6 @@ void UpdateAfterOrder()
 {
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
-    i_std           = MathRound(stddev_period * lots_multiplier);
 
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
     if (OrdersTotal() == 0)
@@ -150,7 +116,6 @@ void UpdateAfterOrder()
         last_buy_price  = 0;
         last_sell_price = 0;
         total_orders    = 0;
-        buffer_profit   = 0;
     }
     else if (OrderType() == OP_SELL)
     {
@@ -181,12 +146,12 @@ void SendOrder(int OP_TYPE)
 
     if (OP_TYPE == OP_SELL)
     {
-        price = Bid;
+        price       = Bid;
         order_color = clrHotPink;
     }
     if (OP_TYPE == OP_BUY)
     {
-        price = Ask;
+        price       = Ask;
         order_color = clrLimeGreen;
     }
 
@@ -234,8 +199,5 @@ void Debug()
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Time: "          + time_difference + "\n" +
-            "Lots: "          + i_lots          + "\n" +
-            "Profit Buffer: " + buffer_profit   + "\n"
-            "STD Period: "    + i_std           + "\n");
+    Comment("Time: " + time_difference + " " + "Lots: " + i_lots + " ");
 }
