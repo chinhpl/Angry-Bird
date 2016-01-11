@@ -8,6 +8,7 @@ double bands_highest     = 0;
 double bands_lowest      = 0;
 double buffer_profit     = 0;
 double i_lots            = 0;
+double i_std             = 0;
 double last_buy_price    = 0;
 double last_sell_price   = 0;
 double lots_multiplier   = 0;
@@ -124,8 +125,8 @@ void UpdateBeforeOrder()
     double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
     double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
     
-    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period * lots_multiplier, 1);
-    double low_index = iLowest(0, 0, MODE_LOW, stddev_period * lots_multiplier, 1);
+    double high_index = iHighest(0, 0, MODE_HIGH, i_std, 1);
+    double low_index = iLowest(0, 0, MODE_LOW, i_std, 1);
     bands_highest = iHigh(0, 0, high_index) + MarketInfo(0, MODE_SPREAD) * Point;
     bands_lowest  = iLow(0, 0, low_index) - MarketInfo(0, MODE_SPREAD) * Point;
 
@@ -139,6 +140,7 @@ void UpdateAfterOrder()
 {
     lots_multiplier = MathPow(exp_base, OrdersTotal());
     i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+    i_std           = MathRound(stddev_period * lots_multiplier);
 
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
     if (OrdersTotal() == 0)
@@ -227,8 +229,6 @@ void Debug()
 {
     UpdateBeforeOrder();
     UpdateAfterOrder();
-    
-    int std_period = stddev_period * lots_multiplier;
 
     ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
@@ -237,5 +237,5 @@ void Debug()
     Comment("Time: "          + time_difference + "\n" +
             "Lots: "          + i_lots          + "\n" +
             "Profit Buffer: " + buffer_profit   + "\n"
-            "STD Period: "    + std_period      + "\n");
+            "STD Period: "    + i_std           + "\n");
 }
