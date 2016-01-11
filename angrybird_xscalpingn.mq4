@@ -92,8 +92,8 @@ void UpdateBeforeOrder()
 
     double spread  = MarketInfo(0, MODE_SPREAD) * Point;
 
-    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period, 1);
+    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period * total_orders, 1);
+    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period * total_orders, 1);
     bands_highest     = iHigh(0, 0, high_index) + spread;
     bands_lowest      = iLow(0, 0, low_index) - spread;
 
@@ -199,5 +199,6 @@ void Debug()
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Time: " + time_difference + " " + "Lots: " + i_lots + " ");
+    Comment("Lots: " + i_lots + " STD Period: " + stddev_period * total_orders +
+            " Time: " + time_difference);
 }
