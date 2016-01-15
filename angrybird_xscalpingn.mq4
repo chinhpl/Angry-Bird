@@ -24,8 +24,8 @@ uint time_start          = GetTickCount();
 extern int rsi_max       = 150;
 extern int rsi_min       = -100;
 extern int rsi_period    = 13;
-extern int stddev_period = 11;
 extern int rsi_slow      = 5;
+extern int stddev_period = 11;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
 
@@ -37,6 +37,7 @@ int init()
     Debug();
     ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
     ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
+    ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);
     return 0;
 }
 
@@ -92,8 +93,8 @@ void UpdateBeforeOrder()
 
     double spread  = MarketInfo(0, MODE_SPREAD) * Point;
 
-    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period * total_orders, 1);
-    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period * total_orders, 1);
+    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period, 1);
     bands_highest     = iHigh(0, 0, high_index) + spread;
     bands_lowest      = iLow(0, 0, low_index) - spread;
 
@@ -197,8 +198,8 @@ void Debug()
 
     ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
     ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
+    ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("Lots: " + i_lots + " STD Period: " + stddev_period * total_orders +
-            " Time: " + time_difference);
+    Comment("Lots: " + i_lots + " Time: " + time_difference);
 }
