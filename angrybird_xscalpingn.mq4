@@ -81,27 +81,32 @@ int start()
     return 0;
 }
 
-void UpdateBeforeOrder()
-{
-    double rsi = 0;
-    for (int i = 1; i <= rsi_slow; i++)
-        rsi += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
-    rsi /= rsi_slow;
+void UpdateBeforeOrder() {
+  double rsi      = 0;
+  double rsi_prev = 0;
+  double rsi_avg  = 0;
 
-    double rsi_hi  = (rsi_max + rsi_max + rsi_min) / 3;
-    double rsi_low = (rsi_max + rsi_min + rsi_min) / 3;
+  for (int i = 1; i <= rsi_slow; i++)
+    rsi_avg += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
 
-    double spread  = MarketInfo(0, MODE_SPREAD) * Point;
+  rsi_avg /= rsi_slow;
+  rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
+  rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
 
-    double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-    double low_index  = iLowest(0, 0, MODE_LOW, stddev_period, 1);
-    bands_highest     = iHigh(0, 0, high_index) + spread;
-    bands_lowest      = iLow(0, 0, low_index) - spread;
+  double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+  double low_index  =  iLowest(0, 0, MODE_LOW,  stddev_period, 1);
+  double spread = MarketInfo(0, MODE_SPREAD) * Point;
+  bands_highest = iHigh(0, 0, high_index) + spread;
+  bands_lowest  =  iLow(0, 0, low_index)  - spread;
 
-    if (rsi > rsi_max) indicator_highest = TRUE; else indicator_highest = FALSE;
-    if (rsi < rsi_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-    if (rsi > rsi_hi ) indicator_high    = TRUE; else indicator_high    = FALSE;
-    if (rsi < rsi_low) indicator_low     = TRUE; else indicator_low     = FALSE;
+  if (rsi_avg > rsi_max && rsi < rsi_avg && rsi_prev > rsi_avg)
+    indicator_highest = TRUE; else indicator_highest = FALSE;
+
+  if (rsi_avg < rsi_min && rsi > rsi_avg && rsi_prev < rsi_avg)
+    indicator_lowest = TRUE; else indicator_lowest = FALSE;
+
+  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high = FALSE;
+  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low  = FALSE;
 }
 
 void UpdateAfterOrder()
