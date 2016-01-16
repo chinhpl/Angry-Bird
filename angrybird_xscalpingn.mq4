@@ -29,24 +29,22 @@ extern int stddev_period = 11;
 extern double exp_base   = 1.4;
 extern double lots       = 0.01;
 
-int init()
-{
-    initial_deposit = AccountBalance();
-    UpdateBeforeOrder();
-    UpdateAfterOrder();
-    Debug();
-    ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
-    ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
-    ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);
-    return 0;
+int init() {
+  initial_deposit = AccountBalance();
+  UpdateBeforeOrder();
+  UpdateAfterOrder();
+  Debug();
+  ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
+  ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
+  ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);
+  return 0;
 }
 
-int deinit()
-{
-    time_elapsed = GetTickCount() - time_start;
-    Print("Time Elapsed: " + time_elapsed);
-    Print("Iterations: " + iterations);
-    return 0;
+int deinit() {
+  time_elapsed = GetTickCount() - time_start;
+  Print("Time Elapsed: " + time_elapsed);
+  Print("Iterations: " + iterations);
+  return 0;
 }
 
 int start() {
@@ -106,102 +104,85 @@ void UpdateBeforeOrder() { iterations++;
   if (rsi_avg < 0) indicator_low  = TRUE; else indicator_low  = FALSE;
 }
 
-void UpdateAfterOrder()
-{
-    lots_multiplier = MathPow(exp_base, OrdersTotal());
-    i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
+void UpdateAfterOrder() {
+  lots_multiplier = MathPow(exp_base, OrdersTotal());
+  i_lots          = NormalizeDouble(lots * lots_multiplier, lotdecimal);
 
-    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-    if (OrdersTotal() == 0)
-    {
-        short_trade     = FALSE;
-        long_trade      = FALSE;
-        last_buy_price  = 0;
-        last_sell_price = 0;
-        total_orders    = 0;
-    }
-    else if (OrderType() == OP_SELL)
-    {
-        short_trade     = TRUE;
-        long_trade      = FALSE;
-        last_sell_price = OrderOpenPrice();
-        last_buy_price  = 0;
-        total_orders    = OrdersTotal();
-    }
-    else if (OrderType() == OP_BUY)
-    {
-        short_trade     = FALSE;
-        long_trade      = TRUE;
-        last_buy_price  = OrderOpenPrice();
-        last_sell_price = 0;
-        total_orders    = OrdersTotal();
-    }
-    else
-    {
-        Alert("Critical error " + GetLastError());
-    }
+  error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+  if (OrdersTotal() == 0) {
+    total_orders    = 0;
+    last_buy_price  = 0;
+    last_sell_price = 0;
+    long_trade      = FALSE;
+    short_trade     = FALSE;
+  } else if (OrderType() == OP_SELL) {
+    total_orders    = OrdersTotal();
+    last_sell_price = OrderOpenPrice();
+    last_buy_price  = 0;
+    long_trade      = FALSE;
+    short_trade     = TRUE;
+  } else if (OrderType() == OP_BUY) {
+    total_orders    = OrdersTotal();
+    last_buy_price  = OrderOpenPrice();
+    last_sell_price = 0;
+    long_trade      = TRUE;
+    short_trade     = FALSE;
+  } else {
+    Alert("Critical error " + GetLastError());
+  }
 }
 
-void SendOrder(int OP_TYPE)
-{
-    double price;
-    color order_color;
+void SendOrder(int OP_TYPE) {
+  double price       = 0;
+  double order_color = 0;
 
-    if (OP_TYPE == OP_SELL)
-    {
-        price       = Bid;
-        order_color = clrHotPink;
-    }
-    if (OP_TYPE == OP_BUY)
-    {
-        price       = Ask;
-        order_color = clrLimeGreen;
-    }
+  if (OP_TYPE == OP_SELL) {
+    price       = Bid;
+    order_color = clrHotPink;
+  }
+  if (OP_TYPE == OP_BUY) {
+    price       = Ask;
+    order_color = clrLimeGreen;
+  }
 
-    error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
-                      magic_number, 0, order_color);
-    if (error == -1) Kill();
-    UpdateAfterOrder();
+  error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
+                    magic_number, 0, order_color);
+  if (error == -1) Kill();
+  UpdateAfterOrder();
 }
 
-void CloseAllOrders()
-{
-    for (int i = OrdersTotal() - 1; i >= 0; i--)
-    {
-        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderType() == OP_BUY)
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-        if (OrderType() == OP_SELL)
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
-    }
-    UpdateAfterOrder();
+void CloseAllOrders() {
+  for (int i = OrdersTotal() - 1; i >= 0; i--) {
+    error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+    if (OrderType() == OP_BUY)
+      error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+    if (OrderType() == OP_SELL)
+      error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+  }
+  UpdateAfterOrder();
 }
 
-void Kill()
-{
-    if (IsTesting() && error < 0)
-    {
-        CloseAllOrders();
-        while (AccountBalance() >= initial_deposit - 1)
-        {
-            error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask,
-                              slip, 0, 0, name, magic_number, 0, 0);
+void Kill() {
+  if (IsTesting() && error < 0) {
+    CloseAllOrders();
+    while (AccountBalance() >= initial_deposit - 1) {
+      error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask, slip,
+                        0, 0, name, magic_number, 0, 0);
 
-            CloseAllOrders();
-        }
-        ExpertRemove();
+      CloseAllOrders();
     }
+    ExpertRemove();
+  }
 }
 
-void Debug()
-{
-    UpdateBeforeOrder();
-    UpdateAfterOrder();
+void Debug() {
+  UpdateBeforeOrder();
+  UpdateAfterOrder();
 
-    ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
-    ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
-    ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
+  ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
+  ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
+  ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
 
-    int time_difference = TimeCurrent() - Time[0];
-    Comment("Lots: " + i_lots + " Time: " + time_difference);
+  int time_difference = TimeCurrent() - Time[0];
+  Comment("Lots: " + i_lots + " Time: " + time_difference);
 }
