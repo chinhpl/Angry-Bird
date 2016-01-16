@@ -81,7 +81,7 @@ int start()
     return 0;
 }
 
-void UpdateBeforeOrder() {
+void UpdateBeforeOrder() { iterations++;
   double rsi      = 0;
   double rsi_prev = 0;
   double rsi_avg  = 0;
@@ -101,12 +101,10 @@ void UpdateBeforeOrder() {
 
   if (rsi_avg > rsi_max && rsi < rsi_avg && rsi_prev > rsi_avg)
     indicator_highest = TRUE; else indicator_highest = FALSE;
-
   if (rsi_avg < rsi_min && rsi > rsi_avg && rsi_prev < rsi_avg)
     indicator_lowest = TRUE; else indicator_lowest = FALSE;
-
-  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high = FALSE;
-  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low  = FALSE;
+  if (rsi_avg > 0) indicator_high = TRUE; else indicator_high = FALSE;
+  if (rsi_avg < 0) indicator_low  = TRUE; else indicator_low  = FALSE;
 }
 
 void UpdateAfterOrder()
