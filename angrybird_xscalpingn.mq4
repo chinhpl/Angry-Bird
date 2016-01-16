@@ -49,36 +49,35 @@ int deinit()
     return 0;
 }
 
-int start()
-{
-    if (!IsTesting() || IsVisualMode()) Debug();
+int start() {
+  if (!IsTesting() || IsVisualMode()) Debug();
 
-    /* Idle conditions */
-    if (previous_time == Time[0]) return 0;
-    previous_time = Time[0];
-    UpdateBeforeOrder();
+  /* Idle conditions */
+  if (previous_time == Time[0]) return 0;
+  previous_time = Time[0];
+  if (long_trade && AccountProfit() < 0 && Bid > last_buy_price) return 0;
+  if (short_trade && AccountProfit() < 0 && Ask < last_sell_price) return 0;
+  UpdateBeforeOrder();
 
-    /* Closes all orders */
-    if (total_orders > 0 && AccountProfit() > 0)
-    {
-        if (short_trade && indicator_low) CloseAllOrders();
-        if (long_trade && indicator_high) CloseAllOrders();
-    }
+  /* Closes all orders */
+  if (total_orders > 0 && AccountProfit() > 0) {
+    if (short_trade && indicator_low) CloseAllOrders();
+    if (long_trade && indicator_high) CloseAllOrders();
+  }
 
-    /* First order */
-    if (total_orders == 0)
-    {
-        if (indicator_lowest) SendOrder(OP_BUY);
-        if (indicator_highest) SendOrder(OP_SELL);
-        return 0;
-    }
-
-    /* Proceeding Orders */
-    if (short_trade && indicator_highest && bands_lowest > last_sell_price)
-        SendOrder(OP_SELL);
-    else if (long_trade && indicator_lowest && bands_highest < last_buy_price)
-        SendOrder(OP_BUY);
+  /* First order */
+  if (total_orders == 0) {
+    if (indicator_lowest) SendOrder(OP_BUY);
+    if (indicator_highest) SendOrder(OP_SELL);
     return 0;
+  }
+
+  /* Proceeding Orders */
+  if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+    SendOrder(OP_SELL);
+  else if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+    SendOrder(OP_BUY);
+  return 0;
 }
 
 void UpdateBeforeOrder() { iterations++;
