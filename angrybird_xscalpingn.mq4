@@ -33,10 +33,10 @@ int init() {
   initial_deposit = AccountBalance();
   UpdateBeforeOrder();
   UpdateAfterOrder();
-  Debug();
+  Debug();/*
   ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
   ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
-  ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);
+  ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);*/
   return 0;
 }
 
@@ -89,19 +89,16 @@ void UpdateBeforeOrder() { iterations++;
   rsi_avg /= rsi_slow;
   rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
   rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
+  
+  bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
+  bands_lowest =  iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
-  double low_index  =  iLowest(0, 0, MODE_LOW,  stddev_period, 1);
-  double spread = MarketInfo(0, MODE_SPREAD) * Point;
-  bands_highest = iHigh(0, 0, high_index) + spread;
-  bands_lowest  =  iLow(0, 0, low_index)  - spread;
-
-  if (rsi_avg > rsi_max && rsi < rsi_avg && rsi_prev > rsi_avg)
+  if (rsi_avg > rsi_max && rsi < rsi_avg)
     indicator_highest = TRUE; else indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg && rsi_prev < rsi_avg)
+  if (rsi_avg < rsi_min && rsi > rsi_avg)
     indicator_lowest = TRUE; else indicator_lowest = FALSE;
-  if (rsi_avg > 0) indicator_high = TRUE; else indicator_high = FALSE;
-  if (rsi_avg < 0) indicator_low  = TRUE; else indicator_low  = FALSE;
+  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high = FALSE;
+  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low  = FALSE;
 }
 
 void UpdateAfterOrder() {
@@ -178,11 +175,11 @@ void Kill() {
 void Debug() {
   UpdateBeforeOrder();
   UpdateAfterOrder();
-
+/*
   ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
   ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
   ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
-
+*/
   int time_difference = TimeCurrent() - Time[0];
   Comment("Lots: " + i_lots + " Time: " + time_difference);
 }
