@@ -33,10 +33,7 @@ int init() {
   initial_deposit = AccountBalance();
   UpdateBeforeOrder();
   UpdateAfterOrder();
-  Debug();/*
-  ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
-  ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
-  ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);*/
+  Debug();
   return 0;
 }
 
@@ -53,8 +50,6 @@ int start() {
   /* Idle conditions */
   if (previous_time == Time[0]) return 0;
   previous_time = Time[0];
-  if (long_trade && AccountProfit() < 0 && Bid > last_buy_price) return 0;
-  if (short_trade && AccountProfit() < 0 && Ask < last_sell_price) return 0;
   UpdateBeforeOrder();
 
   /* Closes all orders */
@@ -80,25 +75,23 @@ int start() {
 
 void UpdateBeforeOrder() { iterations++;
   double rsi      = 0;
-  double rsi_prev = 0;
   double rsi_avg  = 0;
 
-  for (int i = 1; i <= rsi_slow; i++)
+  for (int i = 1; i <= rsi_slow; i++) {
     rsi_avg += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
-
+  }
   rsi_avg /= rsi_slow;
   rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-  rsi_prev = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 2);
   
   bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
   bands_lowest =  iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  if (rsi_avg > rsi_max && rsi < rsi_avg)
-    indicator_highest = TRUE; else indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg)
-    indicator_lowest = TRUE; else indicator_lowest = FALSE;
-  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high = FALSE;
-  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low  = FALSE;
+  if (rsi_avg > rsi_max && rsi < rsi_avg)        indicator_highest = TRUE;
+                                            else indicator_highest = FALSE;
+  if (rsi_avg < rsi_min && rsi > rsi_avg)        indicator_lowest  = TRUE;
+                                            else indicator_lowest  = FALSE;
+  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high    = FALSE;
+  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low     = FALSE;
 }
 
 void UpdateAfterOrder() {
@@ -141,7 +134,6 @@ void SendOrder(int OP_TYPE) {
     price       = Ask;
     order_color = clrLimeGreen;
   }
-
   error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
                     magic_number, 0, order_color);
   if (error == -1) Kill();
@@ -165,7 +157,6 @@ void Kill() {
     while (AccountBalance() >= initial_deposit - 1) {
       error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask, slip,
                         0, 0, name, magic_number, 0, 0);
-
       CloseAllOrders();
     }
     ExpertRemove();
@@ -175,11 +166,6 @@ void Kill() {
 void Debug() {
   UpdateBeforeOrder();
   UpdateAfterOrder();
-/*
-  ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
-  ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
-  ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
-*/
   int time_difference = TimeCurrent() - Time[0];
   Comment("Lots: " + i_lots + " Time: " + time_difference);
 }
