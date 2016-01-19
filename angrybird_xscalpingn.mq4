@@ -74,24 +74,24 @@ int start() {
 }
 
 void UpdateBeforeOrder() { iterations++;
-  double rsi      = 0;
-  double rsi_avg  = 0;
+  double rsi     = 0;
+  double rsi_avg = 0;
 
   for (int i = 1; i <= rsi_slow; i++) {
     rsi_avg += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
   }
   rsi_avg /= rsi_slow;
-  rsi      = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-  
-  bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
-  bands_lowest =  iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
+  rsi = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
 
-  if (rsi_avg > rsi_max && rsi < rsi_avg)        indicator_highest = TRUE;
-                                            else indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg)        indicator_lowest  = TRUE;
-                                            else indicator_lowest  = FALSE;
-  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high    = FALSE;
-  if (rsi < rsi_min) indicator_low  = TRUE; else indicator_low     = FALSE;
+  bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
+  bands_lowest  = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
+
+  if (rsi_avg > rsi_max && rsi < rsi_avg)      indicator_highest = TRUE;
+                                          else indicator_highest = FALSE;
+  if (rsi_avg < rsi_min && rsi > rsi_avg)      indicator_lowest  = TRUE;
+                                          else indicator_lowest  = FALSE;
+  if (rsi_avg > 0) indicator_high = TRUE; else indicator_high    = FALSE;
+  if (rsi_avg < 0) indicator_low  = TRUE; else indicator_low     = FALSE;
 }
 
 void UpdateAfterOrder() {
