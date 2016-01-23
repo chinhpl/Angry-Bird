@@ -34,6 +34,9 @@ int init() {
   UpdateBeforeOrder();
   UpdateAfterOrder();
   Debug();
+  ObjectCreate("bands_highest", OBJ_HLINE, 0, 0, bands_highest);
+  ObjectCreate("bands_lowest", OBJ_HLINE, 0, 0, bands_lowest);
+  ObjectCreate("STD Period", OBJ_VLINE, 0, Time[stddev_period], 0);
   return 0;
 }
 
@@ -82,8 +85,11 @@ void UpdateBeforeOrder() { iterations++;
   }
   rsi_avg /= rsi_slow;
 
-  bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
-  bands_lowest  = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
+  double spread     = MarketInfo(0, MODE_SPREAD) * Point;
+  double high_index = iHighest(0, 0, MODE_HIGH, stddev_period, 1);
+  double low_index  = iLowest(0, 0, MODE_LOW, stddev_period, 1);
+  bands_highest     = iHigh(0, 0, high_index) + spread;
+  bands_lowest      = iLow(0, 0, low_index) - spread;
 
   if (rsi_avg > rsi_max && rsi < rsi_avg)        indicator_highest = TRUE;
                                             else indicator_highest = FALSE;
@@ -163,6 +169,10 @@ void Kill() {
 }
 
 void Debug() {
+  ObjectSet("bands_highest", OBJPROP_PRICE1, bands_highest);
+  ObjectSet("bands_lowest", OBJPROP_PRICE1, bands_lowest);
+  ObjectSet("STD Period", OBJPROP_TIME1, Time[stddev_period]);
+  
   UpdateBeforeOrder();
   UpdateAfterOrder();
   int time_difference = TimeCurrent() - Time[0];
