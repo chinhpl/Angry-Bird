@@ -54,21 +54,21 @@ int start() {
 
   /* Closes all orders */
   if (total_orders > 0 && AccountProfit() > 0) {
-    if (short_trade && indicator_low) CloseAllOrders();
-    if (long_trade && indicator_high) CloseAllOrders();
+    if (short_trade && indicator_low)  CloseAllOrders(); else
+    if (long_trade  && indicator_high) CloseAllOrders();
   }
 
   /* First order */
   if (total_orders == 0) {
-    if (indicator_lowest) SendOrder(OP_BUY);
+    if (indicator_lowest)  SendOrder(OP_BUY); else
     if (indicator_highest) SendOrder(OP_SELL);
     return 0;
   }
 
   /* Proceeding Orders */
   if (short_trade && indicator_highest && bands_lowest > last_sell_price)
-    SendOrder(OP_SELL);
-  else if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+    SendOrder(OP_SELL); else
+  if (long_trade && indicator_lowest && bands_highest < last_buy_price)
     SendOrder(OP_BUY);
   return 0;
 }
@@ -85,12 +85,13 @@ void UpdateBeforeOrder() { iterations++;
   bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
   bands_lowest  = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  if (rsi_avg > rsi_max && rsi < rsi_avg)       indicator_highest = TRUE;
-                                           else indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg)       indicator_lowest  = TRUE;
-                                           else indicator_lowest  = FALSE;
-  if (rsi > rsi_max) indicator_high = TRUE; else indicator_high    = FALSE;
-  if (rsi < rsi_max) indicator_low  = TRUE; else indicator_low     = FALSE;
+  if (rsi_avg > rsi_max && rsi < rsi_avg) indicator_highest = TRUE; else indicator_highest = FALSE;
+  if (rsi_avg < rsi_min && rsi > rsi_avg) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
+  if (rsi > rsi_max)                      indicator_high    = TRUE; else indicator_high    = FALSE;
+  if (rsi < rsi_min)                      indicator_low     = TRUE; else indicator_low     = FALSE;
+  
+  if (indicator_highest) indicator_high = TRUE;
+  if (indicator_lowest)  indicator_low  = TRUE;
 }
 
 void UpdateAfterOrder() {
