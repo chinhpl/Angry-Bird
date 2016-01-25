@@ -89,9 +89,9 @@ void UpdateBeforeOrder() { iterations++;
                                           indicator_highest = FALSE;
   if (rsi_avg < rsi_min && rsi > rsi_avg) indicator_lowest  = TRUE; else
                                           indicator_lowest  = FALSE;
-  if (rsi > rsi_max)                      indicator_high    = TRUE; else
+  if (rsi > 0)                            indicator_high    = TRUE; else
                                           indicator_high    = FALSE;
-  if (rsi < rsi_min)                      indicator_low     = TRUE; else
+  if (rsi < 0)                            indicator_low     = TRUE; else
                                           indicator_low     = FALSE;
 
   if (indicator_highest) indicator_high = TRUE;
