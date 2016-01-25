@@ -40,7 +40,7 @@ int init() {
 int deinit() {
   time_elapsed = GetTickCount() - time_start;
   Print("Time Elapsed: " + time_elapsed);
-  Print("Iterations: " + iterations);
+  Print("Iterations: "   + iterations  );
   return 0;
 }
 
@@ -54,21 +54,21 @@ int start() {
 
   /* Closes all orders */
   if (total_orders > 0 && AccountProfit() > 0) {
-    if (short_trade && indicator_low)  CloseAllOrders(); else
+    if (short_trade && indicator_low ) CloseAllOrders(); else
     if (long_trade  && indicator_high) CloseAllOrders();
   }
 
   /* First order */
   if (total_orders == 0) {
-    if (indicator_lowest)  SendOrder(OP_BUY); else
+    if (indicator_lowest ) SendOrder(OP_BUY ); else
     if (indicator_highest) SendOrder(OP_SELL);
     return 0;
   }
 
   /* Proceeding Orders */
-  if (short_trade && indicator_highest && bands_lowest > last_sell_price)
+  if (short_trade && indicator_highest && bands_lowest  > last_sell_price)
     SendOrder(OP_SELL); else
-  if (long_trade && indicator_lowest && bands_highest < last_buy_price)
+  if (long_trade  && indicator_lowest  && bands_highest < last_buy_price )
     SendOrder(OP_BUY);
   return 0;
 }
@@ -85,11 +85,15 @@ void UpdateBeforeOrder() { iterations++;
   bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
   bands_lowest  = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  if (rsi_avg > rsi_max && rsi < rsi_avg) indicator_highest = TRUE; else indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
-  if (rsi > rsi_max)                      indicator_high    = TRUE; else indicator_high    = FALSE;
-  if (rsi < rsi_min)                      indicator_low     = TRUE; else indicator_low     = FALSE;
-  
+  if (rsi_avg > rsi_max && rsi < rsi_avg) indicator_highest = TRUE; else
+                                          indicator_highest = FALSE;
+  if (rsi_avg < rsi_min && rsi > rsi_avg) indicator_lowest  = TRUE; else
+                                          indicator_lowest  = FALSE;
+  if (rsi > rsi_max)                      indicator_high    = TRUE; else
+                                          indicator_high    = FALSE;
+  if (rsi < rsi_min)                      indicator_low     = TRUE; else
+                                          indicator_low     = FALSE;
+
   if (indicator_highest) indicator_high = TRUE;
   if (indicator_lowest)  indicator_low  = TRUE;
 }
@@ -136,7 +140,7 @@ void SendOrder(int OP_TYPE) {
   }
   error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name,
                     magic_number, 0, order_color);
-  if (error == -1) Kill();
+  if (IsTesting() && error < 0) Kill();
   UpdateAfterOrder();
 }
 
@@ -152,15 +156,13 @@ void CloseAllOrders() {
 }
 
 void Kill() {
-  if (IsTesting() && error < 0) {
+  CloseAllOrders();
+  while (AccountBalance() >= initial_deposit - 1) {
+    error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask, 0, 0,
+                      0, 0, 0, 0, 0);
     CloseAllOrders();
-    while (AccountBalance() >= initial_deposit - 1) {
-      error = OrderSend(Symbol(), OP_BUY, AccountFreeMargin() / Ask, Ask, slip,
-                        0, 0, name, magic_number, 0, 0);
-      CloseAllOrders();
-    }
-    ExpertRemove();
   }
+  ExpertRemove();
 }
 
 void Debug() {
