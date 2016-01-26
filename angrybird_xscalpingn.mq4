@@ -21,12 +21,12 @@ int total_orders         = 0;
 string name              = "Ilan1.6";
 uint time_elapsed        = 0;
 uint time_start          = GetTickCount();
-extern int rsi_max       = 150;
-extern int rsi_min       = -100;
-extern int rsi_period    = 13;
-extern int rsi_slow      = 5;
-extern int stddev_period = 11;
-extern double exp_base   = 1.4;
+extern int cci_max       = 150;
+extern int cci_min       = -150;
+extern int cci_period    = 8;
+extern int cci_ma        = 4;
+extern int bands_period  = 11;
+extern double exp_base   = 1.6;
 extern double lots       = 0.01;
 
 int init() {
@@ -74,24 +74,24 @@ int start() {
 }
 
 void UpdateBeforeOrder() { iterations++;
-  double rsi     = iCCI(0, 0, rsi_period, PRICE_TYPICAL, 1);
-  double rsi_avg = 0;
+  double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
+  double cci_avg = 0;
 
-  for (int i = 1; i <= rsi_slow; i++) {
-    rsi_avg += iCCI(0, 0, rsi_period, PRICE_TYPICAL, i);
+  for (int i = 1; i <= cci_ma; i++) {
+    cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
   }
-  rsi_avg /= rsi_slow;
+  cci_avg /= cci_ma;
 
-  bands_highest = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_HIGH, 1);
-  bands_lowest  = iMA(0, 0, stddev_period, 0, MODE_SMA, PRICE_LOW,  1);
+  bands_highest = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
+  bands_lowest  = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  if (rsi_avg > rsi_max && rsi < rsi_avg) indicator_highest = TRUE; else
+  if (cci_avg > cci_max && cci < cci_avg) indicator_highest = TRUE; else
                                           indicator_highest = FALSE;
-  if (rsi_avg < rsi_min && rsi > rsi_avg) indicator_lowest  = TRUE; else
+  if (cci_avg < cci_min && cci > cci_avg) indicator_lowest  = TRUE; else
                                           indicator_lowest  = FALSE;
-  if (rsi > 0)                            indicator_high    = TRUE; else
+  if (cci > cci_max)                      indicator_high    = TRUE; else
                                           indicator_high    = FALSE;
-  if (rsi < 0)                            indicator_low     = TRUE; else
+  if (cci < cci_min)                      indicator_low     = TRUE; else
                                           indicator_low     = FALSE;
 
   if (indicator_highest) indicator_high = TRUE;
