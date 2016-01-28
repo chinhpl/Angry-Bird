@@ -89,9 +89,9 @@ void UpdateBeforeOrder() { iterations++;
                                           indicator_highest = FALSE;
   if (cci_avg < cci_min && cci > cci_avg) indicator_lowest  = TRUE; else
                                           indicator_lowest  = FALSE;
-  if (cci > cci_max)                      indicator_high    = TRUE; else
+  if (cci < cci_avg)                      indicator_high    = TRUE; else
                                           indicator_high    = FALSE;
-  if (cci < cci_min)                      indicator_low     = TRUE; else
+  if (cci > cci_avg)                      indicator_low     = TRUE; else
                                           indicator_low     = FALSE;
 
   if (indicator_highest) indicator_high = TRUE;
