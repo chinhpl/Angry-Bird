@@ -85,14 +85,10 @@ void UpdateBeforeOrder() { iterations++;
   bands_highest = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
   bands_lowest  = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_LOW,  1);
 
-  if (cci_avg > cci_max && cci < cci_avg) indicator_highest = TRUE; else
-                                          indicator_highest = FALSE;
-  if (cci_avg < cci_min && cci > cci_avg) indicator_lowest  = TRUE; else
-                                          indicator_lowest  = FALSE;
-  if (cci < cci_avg)                      indicator_high    = TRUE; else
-                                          indicator_high    = FALSE;
-  if (cci > cci_avg)                      indicator_low     = TRUE; else
-                                          indicator_low     = FALSE;
+  if (cci_avg > cci_max) indicator_highest = TRUE; else indicator_highest = FALSE;
+  if (cci_avg < cci_min) indicator_lowest  = TRUE; else indicator_lowest  = FALSE;
+  if (cci < 0)           indicator_high    = TRUE; else indicator_high    = FALSE;
+  if (cci > 0)           indicator_low     = TRUE; else indicator_low     = FALSE;
 
   if (indicator_highest) indicator_high = TRUE;
   if (indicator_lowest)  indicator_low  = TRUE;
