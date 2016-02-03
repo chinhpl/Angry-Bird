@@ -50,12 +50,13 @@ int start() {
   /* Idle conditions */
   if (previous_time == Time[0]) return 0;
   previous_time = Time[0];
+  if (short_trade && AccountProfit() <= 0 && Bid < last_sell_price) return 0;
+  if (long_trade  && AccountProfit() <= 0 && Ask > last_buy_price ) return 0;
   UpdateBeforeOrder();
 
   /* Closes all orders */
   if (total_orders > 0 && AccountProfit() > 0) {
-    if (short_trade && indicator_low ) CloseAllOrders(); else
-    if (long_trade  && indicator_high) CloseAllOrders();
+    if (indicator_high || indicator_low) CloseAllOrders();
   }
 
   /* First order */
