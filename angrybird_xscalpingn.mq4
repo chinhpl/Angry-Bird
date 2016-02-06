@@ -1,30 +1,29 @@
-bool cci_highest        = FALSE;
-bool cci_lowest         = FALSE;
-bool cci_high           = FALSE;
-bool cci_low            = FALSE;
-bool trade_buy          = FALSE;
-bool trade_sell         = FALSE;
-double last_sell_price  = 0;
-double last_buy_price   = 0;
-double band_low         = 0;
+bool cci_highest = FALSE;
+bool cci_lowest  = FALSE;
+bool trade_sell  = FALSE;
+bool trade_buy   = FALSE;
+bool cci_high    = FALSE;
+bool cci_low     = FALSE;
+double last_order_price = 0;
 double band_high        = 0;
+double band_low         = 0;
 double i_lots           = 0;
-int initial_deposit     = 0;
-int total_orders        = 0;
-int iterations          = 0;
-int lotdecimal          = 2;
-int magic_num           = 2222;
-int prev_time           = 0;
-int error               = 0;
-int slip                = 100;
-uint time_start         = GetTickCount();
-string name             = "Ilan1.6";
-extern int cci_max      = 150;
-extern int cci_min      = -150;
-extern int cci_period   = 8;
-extern int cci_ma       = 4;
-extern int bands_period = 11;
-extern double exp_base  = 1.6;
+int initial_deposit = 0;
+int magic_num       = 2222;
+int total_orders    = 0;
+int iterations      = 0;
+int lotdecimal      = 2;
+int prev_time       = 0;
+int slip            = 100;
+int error           = 0;
+uint time_start = GetTickCount();
+string name = "Ilan1.6";
+extern int cci_max      = 190;
+extern int cci_min      = -230;
+extern int cci_period   = 18;
+extern int cci_ma       = 2;
+extern int bands_period = 4;
+extern double exp       = 1.2;
 extern double lots      = 0.01;
 
 int init()
@@ -33,7 +32,6 @@ int init()
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
-
     return 0;
 }
 
@@ -41,8 +39,7 @@ int deinit()
 {
     uint time_elapsed = GetTickCount() - time_start;
     Print("Time Elapsed: " + time_elapsed);
-    Print("Iterations: "   + iterations);
-
+    Print("Iterations: "   + iterations  );
     return 0;
 }
 
@@ -53,39 +50,37 @@ int start()
     /* Idle conditions */
     if (prev_time == Time[0]) return 0;
     prev_time = Time[0];
-    if (trade_sell && AccountProfit() <= 0 && Bid < last_sell_price) return 0;
-    if (trade_buy  && AccountProfit() <= 0 && Ask > last_buy_price ) return 0;
+    if (trade_sell && AccountProfit() <= 0 && Bid < last_order_price) return 0;
+    if (trade_buy  && AccountProfit() <= 0 && Ask > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders */
     if (total_orders > 0 && AccountProfit() > 0)
     {
-        if (trade_sell && cci_low ) CloseAllOrders();
-        if (trade_buy  && cci_high) CloseAllOrders();
+        if (trade_sell && cci_lowest ) CloseAllOrders();
+        if (trade_buy  && cci_highest) CloseAllOrders();
     }
 
     /* First order */
     if (total_orders == 0)
     {
-        if (cci_lowest ) SendOrder(OP_BUY );
+        if (cci_lowest ) SendOrder(OP_BUY);
         if (cci_highest) SendOrder(OP_SELL);
         return 0;
     }
 
     /* Proceeding Orders */
-    if (trade_sell && cci_highest && band_low  > last_sell_price) SendOrder(OP_SELL);
-    if (trade_buy  && cci_lowest  && band_high < last_buy_price ) SendOrder(OP_BUY );
-
+    if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
+    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY);
     return 0;
 }
 
 void UpdateBeforeOrder()
 {   iterations++;
-
-    double cci_avg = 0;
+    band_high      = iMA( 0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
+    band_low       = iMA( 0, 0, bands_period, 0, MODE_SMA, PRICE_LOW, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
-    band_high      =  iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
-    band_low       =  iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_LOW , 1);
+    double cci_avg = 0;
 
     for (int i = 1; i <= cci_ma; i++)
     {
@@ -101,33 +96,30 @@ void UpdateBeforeOrder()
 
 void UpdateAfterOrder()
 {
-    double multiplier = MathPow(exp_base, OrdersTotal());
+    double multiplier = MathPow(exp, OrdersTotal());
     i_lots            = NormalizeDouble(lots * multiplier, lotdecimal);
 
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
     if (OrdersTotal() == 0)
     {
-        total_orders    = 0;
-        trade_sell      = FALSE;
-        last_sell_price = 0;
-        last_buy_price  = 0;
-        trade_buy       = FALSE;
+        last_order_price = 0;
+        total_orders     = 0;
+        trade_sell       = FALSE;
+        trade_buy        = FALSE;
     }
     else if (OrderType() == OP_SELL)
     {
-        total_orders    = OrdersTotal();
-        last_sell_price = OrderOpenPrice();
-        last_buy_price  = 0;
-        trade_buy       = FALSE;
-        trade_sell      = TRUE;
+        last_order_price = OrderOpenPrice();
+        total_orders     = OrdersTotal();
+        trade_sell       = TRUE;
+        trade_buy        = FALSE;
     }
     else if (OrderType() == OP_BUY)
     {
-        total_orders    = OrdersTotal();
-        last_sell_price = 0;
-        last_buy_price  = OrderOpenPrice();
-        trade_buy       = TRUE;
-        trade_sell      = FALSE;
+        last_order_price = OrderOpenPrice();
+        total_orders     = OrdersTotal();
+        trade_sell       = FALSE;
+        trade_buy        = TRUE;
     }
     else
     {
@@ -188,8 +180,8 @@ void Kill()
 
 void Debug()
 {
-    UpdateBeforeOrder();
     UpdateAfterOrder();
+    UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
     Comment("lots: " + i_lots + " Time: " + time_difference);
 }
