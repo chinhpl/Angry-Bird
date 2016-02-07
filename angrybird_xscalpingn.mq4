@@ -57,8 +57,8 @@ int start()
     /* Closes all orders */
     if (total_orders > 0 && AccountProfit() > 0)
     {
-        if (trade_sell && cci_lowest ) CloseAllOrders();
-        if (trade_buy  && cci_highest) CloseAllOrders();
+        if (trade_sell && cci_low ) CloseAllOrders();
+        if (trade_buy  && cci_high) CloseAllOrders();
     }
 
     /* First order */
