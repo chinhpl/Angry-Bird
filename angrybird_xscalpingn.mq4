@@ -48,28 +48,20 @@ int start()
     if (!IsTesting() || IsVisualMode()) Debug();
 
     /* Idle conditions */
-    if (prev_time == Time[0]) return 0;
-    prev_time = Time[0];
+    if (prev_time == Time[0]) return 0; prev_time = Time[0];
     if (trade_sell && AccountProfit() <= 0 && Bid < last_order_price) return 0;
     if (trade_buy  && AccountProfit() <= 0 && Ask > last_order_price) return 0;
     UpdateBeforeOrder();
 
-    /* Closes all orders */
-    if (total_orders > 0 && AccountProfit() > 0)
-    {
-        if (trade_sell && cci_low ) CloseAllOrders();
-        if (trade_buy  && cci_high) CloseAllOrders();
-    }
+    /* Closes all orders if there are any*/
+    if (AccountProfit() > 0 && trade_sell && cci_low ) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_buy  && cci_high) CloseAllOrders();
 
     /* First order */
-    if (total_orders == 0)
-    {
-        if (cci_lowest ) SendOrder(OP_BUY);
-        if (cci_highest) SendOrder(OP_SELL);
-        return 0;
-    }
+    if (total_orders == 0 && cci_lowest ) SendOrder(OP_BUY);
+    if (total_orders == 0 && cci_highest) SendOrder(OP_SELL);
 
-    /* Proceeding Orders */
+    /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
     if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY);
     return 0;
@@ -90,8 +82,8 @@ void UpdateBeforeOrder()
 
     if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
     if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci < cci_avg)                      cci_high    = 1; else cci_high    = 0;
-    if (cci > cci_avg)                      cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > 0       && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < 0       && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
