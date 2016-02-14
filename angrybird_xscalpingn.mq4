@@ -32,6 +32,8 @@ int init()
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
+    ObjectCreate("band_high", OBJ_HLINE, 0, 0, band_high);
+    ObjectCreate("band_low" , OBJ_HLINE, 0, 0, band_low );
     return 0;
 }
 
@@ -49,31 +51,31 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
-    if (trade_sell && AccountProfit() <= 0 && Bid < last_order_price) return 0;
-    if (trade_buy  && AccountProfit() <= 0 && Ask > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any*/
-    if (AccountProfit() > 0 && trade_sell && cci_low ) CloseAllOrders();
-    if (AccountProfit() > 0 && trade_buy  && cci_high) CloseAllOrders();
+    if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
-    if (total_orders == 0 && cci_lowest ) SendOrder(OP_BUY);
+    if (total_orders == 0 && cci_lowest ) SendOrder(OP_BUY );
     if (total_orders == 0 && cci_highest) SendOrder(OP_SELL);
 
     /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
-    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY);
+    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
     return 0;
 }
 
 void UpdateBeforeOrder()
-{   iterations++;
-    band_high      = iMA( 0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
-    band_low       = iMA( 0, 0, bands_period, 0, MODE_SMA, PRICE_LOW, 1);
-    double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
-    double cci_avg = 0;
-
+{
+    double spread     = MarketInfo(0, MODE_SPREAD) * Point;
+    double high_index = iHighest(0, 0, MODE_HIGH, bands_period, 1);
+    double low_index  = iLowest (0, 0, MODE_LOW , bands_period, 1);
+    band_high         = iHigh(0, 0, high_index) + spread;
+    band_low          = iLow (0, 0, low_index ) - spread;
+    double cci        = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
+    double cci_avg    = 0;
+    
     for (int i = 1; i <= cci_ma; i++)
     {
         cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
@@ -82,8 +84,8 @@ void UpdateBeforeOrder()
 
     if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
     if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > 0       && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < 0       && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
+    if (cci     > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
+    if (cci     < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -174,6 +176,12 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
+    
+    ObjectSet("band_high", OBJPROP_PRICE1, band_high);
+    ObjectSet("band_low" , OBJPROP_PRICE1, band_low );
+    
     int time_difference = TimeCurrent() - Time[0];
-    Comment("lots: " + i_lots + " Time: " + time_difference);
+    Comment("lots: "             + i_lots          +
+            " Time: "            + time_difference +
+            "\nAccount Profit: " + AccountProfit());
 }
