@@ -181,7 +181,5 @@ void Debug()
     ObjectSet("band_low" , OBJPROP_PRICE1, band_low );
     
     int time_difference = TimeCurrent() - Time[0];
-    Comment("lots: "             + i_lots          +
-            " Time: "            + time_difference +
-            "\nAccount Profit: " + AccountProfit());
+    Comment("lots: " + i_lots + " Time: " + time_difference);
 }
