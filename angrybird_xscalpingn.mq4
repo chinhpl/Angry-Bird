@@ -32,8 +32,6 @@ int init()
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
-    ObjectCreate("band_high", OBJ_HLINE, 0, 0, band_high);
-    ObjectCreate("band_low" , OBJ_HLINE, 0, 0, band_low );
     return 0;
 }
 
@@ -68,11 +66,8 @@ int start()
 
 void UpdateBeforeOrder()
 {
-    double spread     = MarketInfo(0, MODE_SPREAD) * Point;
-    double high_index = iHighest(0, 0, MODE_HIGH, bands_period, 1);
-    double low_index  = iLowest (0, 0, MODE_LOW , bands_period, 1);
-    band_high         = iHigh(0, 0, high_index) + spread;
-    band_low          = iLow (0, 0, low_index ) - spread;
+    band_high         = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_HIGH, 1);
+    band_low          = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_LOW , 1);
     double cci        = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg    = 0;
     
@@ -84,8 +79,8 @@ void UpdateBeforeOrder()
 
     if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
     if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci     > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
-    if (cci     < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > 0       && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < 0       && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -176,9 +171,6 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
-    
-    ObjectSet("band_high", OBJPROP_PRICE1, band_high);
-    ObjectSet("band_low" , OBJPROP_PRICE1, band_low );
     
     int time_difference = TimeCurrent() - Time[0];
     Comment("lots: " + i_lots + " Time: " + time_difference);
