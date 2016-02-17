@@ -73,8 +73,12 @@ int start()
     }
 
     /* First order */
-    if (total_orders == 0 && cci_lowest ) SendOrder(OP_BUY );
-    if (total_orders == 0 && cci_highest) SendOrder(OP_SELL);
+    if (total_orders == 0)
+    {
+        if (cci_lowest ) SendOrder(OP_BUY );
+        if (cci_highest) SendOrder(OP_SELL);
+        return 0;
+    }
 
     /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
