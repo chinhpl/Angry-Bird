@@ -8,6 +8,7 @@ double last_order_price = 0;
 double band_high        = 0;
 double band_low         = 0;
 double i_lots           = 0;
+double avg_price        = 0;
 int initial_deposit = 0;
 int magic_num       = 2222;
 int total_orders    = 0;
@@ -32,6 +33,7 @@ int init()
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
+    ObjectCreate("Average Price", OBJ_HLINE, 0, 0, avg_price);
     return 0;
 }
 
@@ -51,8 +53,24 @@ int start()
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
     UpdateBeforeOrder();
 
-    /* Closes all orders if there are any*/
+    /* Closes all orders if there are any */
     if (AccountProfit() > 0) CloseAllOrders();
+    
+    /* Closes orders that lower the average price */
+    for (int i = 1; i < total_orders; i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (trade_sell && OrderOpenPrice() < avg_price && OrderProfit() >= -OrderCommission())
+        {
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
+            UpdateAfterOrder();
+        }
+        if (trade_buy  && OrderOpenPrice() > avg_price && OrderProfit() >= -OrderCommission())
+        {
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
+            UpdateAfterOrder();
+        }
+    }
 
     /* First order */
     if (total_orders == 0 && cci_lowest ) SendOrder(OP_BUY );
@@ -114,6 +132,16 @@ void UpdateAfterOrder()
     {
         Alert("Critical error " + GetLastError());
     }
+    
+    avg_price      = 0;
+    double avg_lots = 0;
+    for (int i = 0; i < OrdersTotal(); i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        avg_price += OrderOpenPrice() * OrderLots();
+        avg_lots  += OrderLots();
+    }
+    if (OrdersTotal() > 0) avg_price /= avg_lots;
 }
 
 void SendOrder(int OP_TYPE)
@@ -171,6 +199,7 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
+    ObjectSet("Average Price", OBJPROP_PRICE1, avg_price);
     
     int time_difference = TimeCurrent() - Time[0];
     Comment("lots: " + i_lots + " Time: " + time_difference);
