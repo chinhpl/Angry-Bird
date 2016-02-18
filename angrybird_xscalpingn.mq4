@@ -49,6 +49,8 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
+    if (trade_sell && AccountProfit() < 0 && Ask < last_order_price) return 0;
+    if (trade_buy  && AccountProfit() < 0 && Bid > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
@@ -70,6 +72,7 @@ int start()
 
 void UpdateBeforeOrder()
 {
+    iterations++;
     band_high         = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
     band_low          = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci        = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
