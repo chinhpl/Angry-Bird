@@ -84,10 +84,10 @@ void UpdateBeforeOrder()
     }
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > 0      ) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < 0      ) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
