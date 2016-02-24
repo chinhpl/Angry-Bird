@@ -49,12 +49,25 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
-    if (trade_sell && AccountProfit() < 0 && Ask < last_order_price) return 0;
-    if (trade_buy  && AccountProfit() < 0 && Bid > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
     if (AccountProfit() > 0) CloseAllOrders();
+
+    /* Closes last order */
+    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    if (OrderProfit() > -OrderCommission() && trade_sell && cci_lowest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
+        UpdateAfterOrder();
+        return 0;
+    }
+    if (OrderProfit() > -OrderCommission() && trade_buy && cci_highest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
+        UpdateAfterOrder();
+        return 0;
+    }
 
     /* First order */
     if (total_orders == 0)
