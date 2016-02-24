@@ -77,7 +77,7 @@ void UpdateBeforeOrder()
     band_low          = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci        = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg    = 0;
-    
+
     for (int i = 1; i <= cci_ma; i++)
     {
         cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
@@ -178,7 +178,7 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
-    
+
     int time_difference = TimeCurrent() - Time[0];
     Comment("lots: " + i_lots + " Time: " + time_difference);
 }
