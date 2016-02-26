@@ -54,6 +54,21 @@ int start()
     /* Closes all orders if there are any */
     if (AccountProfit() > 0) CloseAllOrders();
 
+    /* Closes last order */
+    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    if (OrderProfit() > -OrderCommission() && trade_sell && cci_lowest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
+        UpdateAfterOrder();
+        return 0;
+    }
+    if (OrderProfit() > -OrderCommission() && trade_buy && cci_highest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
+        UpdateAfterOrder();
+        return 0;
+    }
+
     /* First order */
     if (total_orders == 0)
     {
@@ -161,7 +176,6 @@ void CloseAllOrders()
 
 void Kill()
 {
-
     CloseAllOrders();
     while (AccountBalance() >= initial_deposit - 1)
     {
