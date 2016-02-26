@@ -71,8 +71,8 @@ int start()
 void UpdateBeforeOrder()
 {
     iterations++;
-    band_high      = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
-    band_low       = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_UPPER, 1);
+    band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
