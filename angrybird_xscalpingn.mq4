@@ -151,9 +151,11 @@ void CloseAllOrders()
 {
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
-        error  = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderType() == OP_BUY ) error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-        if (OrderType() == OP_SELL) error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+        if (OrderType() == OP_BUY)
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+        if (OrderType() == OP_SELL)
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     UpdateAfterOrder();
 }
