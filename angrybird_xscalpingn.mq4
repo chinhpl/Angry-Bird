@@ -54,21 +54,6 @@ int start()
     /* Closes all orders if there are any */
     if (AccountProfit() > 0) CloseAllOrders();
 
-    /* Closes last order */
-    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-    if (OrderProfit() > -OrderCommission() && trade_sell && cci_lowest)
-    {
-        error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
-        UpdateAfterOrder();
-        return 0;
-    }
-    if (OrderProfit() > -OrderCommission() && trade_buy && cci_highest)
-    {
-        error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
-        UpdateAfterOrder();
-        return 0;
-    }
-
     /* First order */
     if (total_orders == 0)
     {
@@ -86,8 +71,8 @@ int start()
 void UpdateBeforeOrder()
 {
     iterations++;
-    band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    band_high      = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
+    band_low       = iMA(0, 0, bands_period, 0, MODE_SMA, PRICE_TYPICAL, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
