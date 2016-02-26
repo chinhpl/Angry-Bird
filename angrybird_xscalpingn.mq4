@@ -138,38 +138,22 @@ void UpdateAfterOrder()
 
 void SendOrder(int OP_TYPE)
 {
-    double price = 0;
-    double clr   = 0;
-
     if (OP_TYPE == OP_SELL)
-    {
-        price = Bid;
-        clr   = clrHotPink;
-    }
+        error = OrderSend(Symbol(), OP_TYPE, i_lots, Bid, slip, 0, 0, name, magic_num, 0, clrHotPink);
     if (OP_TYPE == OP_BUY)
-    {
-        price = Ask;
-        clr   = clrLimeGreen;
-    }
-    error = OrderSend(Symbol(), OP_TYPE, i_lots, price, slip, 0, 0, name, magic_num, 0, clr);
+        error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name, magic_num, 0, clrLimeGreen);
+
     if (IsTesting() && error < 0) Kill();
     UpdateAfterOrder();
 }
 
 void CloseAllOrders()
 {
-    color  clr    = clrBlue;
-    double ticket = 0;
-    double lots_  = 0;
-
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         error  = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        ticket = OrderTicket();
-        lots_  = OrderLots();
-
-        if (OrderType() == OP_BUY ) error = OrderClose(ticket, lots_, Bid, slip, clr);
-        if (OrderType() == OP_SELL) error = OrderClose(ticket, lots_, Ask, slip, clr);
+        if (OrderType() == OP_BUY ) error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+        if (OrderType() == OP_SELL) error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     UpdateAfterOrder();
 }
