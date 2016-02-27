@@ -57,8 +57,8 @@ int start()
     /* First order */
     if (total_orders == 0)
     {
-        if (cci_lowest ) SendOrder(OP_BUY );
         if (cci_highest) SendOrder(OP_SELL);
+        if (cci_lowest ) SendOrder(OP_BUY );
         return 0;
     }
 
@@ -70,7 +70,6 @@ int start()
 
 void UpdateBeforeOrder()
 {
-    iterations++;
     band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_UPPER, 1);
     band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
