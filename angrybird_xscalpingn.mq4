@@ -63,15 +63,15 @@ int start()
     }
 
     /* Proceeding orders */
-    if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
-    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
+    if (trade_sell && cci_highest && band_low  > last_order_price && Bid > last_order_price + (last_order_price * 0.0025)) SendOrder(OP_SELL);
+    if (trade_buy  && cci_lowest  && band_high < last_order_price && Ask < last_order_price - (last_order_price * 0.0025)) SendOrder(OP_BUY );
     return 0;
 }
 
 void UpdateBeforeOrder()
 {
-    band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_UPPER, 1);
-    band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_LOWER, 1);
+    band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
