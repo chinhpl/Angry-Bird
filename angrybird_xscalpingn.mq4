@@ -5,7 +5,6 @@ bool trade_buy   = FALSE;
 bool cci_high    = FALSE;
 bool cci_low     = FALSE;
 double last_order_price = 0;
-double profit_buffer    = 0;
 double band_high        = 0;
 double band_low         = 0;
 double i_lots           = 0;
@@ -54,24 +53,7 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > profit_buffer) CloseAllOrders();
-
-    /* Closes last order */
-    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
-    if (OrderProfit() > -OrderCommission() && trade_sell && cci_lowest)
-    {
-        error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
-        profit_buffer -= OrderProfit() + OrderCommission();
-        UpdateAfterOrder();
-        return 0;
-    }
-    if (OrderProfit() > -OrderCommission() && trade_buy && cci_highest)
-    {
-        error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
-        profit_buffer -= OrderProfit() + OrderCommission();
-        UpdateAfterOrder();
-        return 0;
-    }
+    if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
     if (total_orders == 0)
@@ -116,7 +98,6 @@ void UpdateAfterOrder()
     {
         last_order_price = 0;
         total_orders     = 0;
-        profit_buffer    = 0;
         trade_sell       = FALSE;
         trade_buy        = FALSE;
     }
@@ -185,7 +166,6 @@ void Debug()
 
     int time_difference = TimeCurrent() - Time[0];
     Comment(
-            "Profit Buffer: " + profit_buffer   + " - " +
             "lots: "          + i_lots          + " - " +
             "Time: "          + time_difference + " - " +
             "");
