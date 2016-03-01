@@ -5,6 +5,7 @@ bool trade_buy   = FALSE;
 bool cci_high    = FALSE;
 bool cci_low     = FALSE;
 double last_order_price = 0;
+double profit_buffer    = 0;
 double band_high        = 0;
 double band_low         = 0;
 double i_lots           = 0;
@@ -18,18 +19,18 @@ int slip            = 100;
 int error           = 0;
 uint time_start = GetTickCount();
 string name = "Ilan1.6";
-extern int cci_max      = 190;
-extern int cci_min      = -230;
-extern int cci_period   = 18;
-extern int cci_ma       = 2;
-extern int bands_period = 4;
-extern double exp       = 1.2;
-extern double lots      = 0.01;
+extern int cci_max      =  150;
+extern int cci_min      = -150;
+extern int cci_period   =  15;
+extern int bands_period =  15;
+extern int cci_ma       =  5;
+extern double exp       =  1.5;
+extern double lots      =  0.01;
 
 int init()
 {
     initial_deposit = AccountBalance();
-    ObjectCreate( "Last Order Price", OBJ_HLINE, 0, 0, last_order_price, 0, 0, 0, 0);
+    ObjectCreate( "Last Order Price", OBJ_HLINE, 0, 0, last_order_price);
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
@@ -53,7 +54,24 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0) CloseAllOrders();
+    if (AccountProfit() > profit_buffer) CloseAllOrders();
+
+    /* Closes last order */
+    error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    if (OrderProfit() > -OrderCommission() && trade_sell && cci_lowest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrGold);
+        profit_buffer -= OrderProfit() + OrderCommission();
+        UpdateAfterOrder();
+        return 0;
+    }
+    if (OrderProfit() > -OrderCommission() && trade_buy && cci_highest)
+    {
+        error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrGold);
+        profit_buffer -= OrderProfit() + OrderCommission();
+        UpdateAfterOrder();
+        return 0;
+    }
 
     /* First order */
     if (total_orders == 0)
@@ -82,10 +100,10 @@ void UpdateBeforeOrder()
     }
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > cci_max /*&& cci < cci_avg*/) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min /*&& cci > cci_avg*/) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > cci_min /*&& cci < cci_avg*/) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < cci_max /*&& cci > cci_avg*/) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -98,6 +116,7 @@ void UpdateAfterOrder()
     {
         last_order_price = 0;
         total_orders     = 0;
+        profit_buffer    = 0;
         trade_sell       = FALSE;
         trade_buy        = FALSE;
     }
@@ -165,5 +184,9 @@ void Debug()
     ObjectSet("Last Order Price", OBJPROP_PRICE1, last_order_price);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment("lots: " + i_lots + " Time: " + time_difference);
+    Comment(
+            "Profit Buffer: " + profit_buffer   + " - " +
+            "lots: "          + i_lots          + " - " +
+            "Time: "          + time_difference + " - " +
+            "");
 }
