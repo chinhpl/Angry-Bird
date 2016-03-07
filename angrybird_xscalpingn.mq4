@@ -29,7 +29,7 @@ extern double lots      =  0.01;
 int init()
 {
     initial_deposit = AccountBalance();
-    ObjectCreate( "Last Order Price", OBJ_HLINE, 0, 0, last_order_price);
+    ObjectCreate("Last Order Price", OBJ_HLINE, 0, 0, last_order_price);
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
@@ -56,7 +56,7 @@ int start()
     if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
-    if (total_orders == 0)
+    if (OrdersTotal() == 0)
     {
         if (cci_highest) SendOrder(OP_SELL);
         if (cci_lowest ) SendOrder(OP_BUY );
@@ -165,8 +165,8 @@ void Debug()
     ObjectSet("Last Order Price", OBJPROP_PRICE1, last_order_price);
 
     int time_difference = TimeCurrent() - Time[0];
-    Comment(
-            "lots: "          + i_lots          + " - " +
-            "Time: "          + time_difference + " - " +
+    Comment("\n- "   +
+            "Lots: " + i_lots          + " - " +
+            "Time: " + time_difference + " - " +
             "");
 }
