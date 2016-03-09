@@ -29,7 +29,6 @@ extern double lots      =  0.01;
 int init()
 {
     initial_deposit = AccountBalance();
-    ObjectCreate("Last Order Price", OBJ_HLINE, 0, 0, last_order_price);
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
@@ -71,8 +70,8 @@ int start()
 
 void UpdateBeforeOrder()
 {
-    band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_UPPER, 1);
+    band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -103,14 +102,14 @@ void UpdateAfterOrder()
     }
     else if (OrderType() == OP_SELL)
     {
-        last_order_price = OrderOpenPrice() + (OrderOpenPrice() * 0.0025);
+        last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
         trade_sell       = TRUE;
         trade_buy        = FALSE;
     }
     else if (OrderType() == OP_BUY)
     {
-        last_order_price = OrderOpenPrice() - (OrderOpenPrice() * 0.0025);
+        last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
         trade_sell       = FALSE;
         trade_buy        = TRUE;
@@ -161,8 +160,6 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
-
-    ObjectSet("Last Order Price", OBJPROP_PRICE1, last_order_price);
 
     int time_difference = TimeCurrent() - Time[0];
     Comment("\n- "   +
