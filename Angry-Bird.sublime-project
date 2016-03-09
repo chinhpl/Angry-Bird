@@ -1,13 +1,13 @@
 {
-	"folders":
-	[
-		{
-			"path"                   : ".",
+    "folders":
+    [
+        {
+            "path"                   : ".",
             "file_exclude_patterns"  : [
                                         "*.ex4" ,
                                         "*git*" ,
                                         "*subl*",
                                         ],
-		}
-	]
+        }
+    ]
 }
