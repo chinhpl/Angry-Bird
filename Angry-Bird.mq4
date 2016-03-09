@@ -9,15 +9,13 @@ double band_high        = 0;
 double band_low         = 0;
 double i_lots           = 0;
 int initial_deposit = 0;
-int magic_num       = 2222;
 int total_orders    = 0;
 int iterations      = 0;
 int lotdecimal      = 2;
 int prev_time       = 0;
-int slip            = 100;
+int magic_num       = 2222;
 int error           = 0;
-uint time_start = GetTickCount();
-string name = "Ilan1.6";
+int slip            = 100;
 extern int cci_max      =  150;
 extern int cci_min      = -150;
 extern int cci_period   =  15;
@@ -25,6 +23,8 @@ extern int bands_period =  15;
 extern int cci_ma       =  5;
 extern double exp       =  1.5;
 extern double lots      =  0.01;
+uint time_start = GetTickCount();
+string name = "Ilan1.6";
 
 int init()
 {
@@ -122,10 +122,8 @@ void UpdateAfterOrder()
 
 void SendOrder(int OP_TYPE)
 {
-    if (OP_TYPE == OP_SELL)
-        error = OrderSend(Symbol(), OP_TYPE, i_lots, Bid, slip, 0, 0, name, magic_num, 0, clrHotPink);
-    if (OP_TYPE == OP_BUY)
-        error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name, magic_num, 0, clrLimeGreen);
+    if (OP_TYPE == OP_SELL) error = OrderSend(Symbol(), OP_TYPE, i_lots, Bid, slip, 0, 0, name, magic_num, 0, clrHotPink);
+    if (OP_TYPE == OP_BUY ) error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name, magic_num, 0, clrLimeGreen);
 
     if (IsTesting() && error < 0) Kill();
     UpdateAfterOrder();
@@ -136,10 +134,8 @@ void CloseAllOrders()
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderType() == OP_BUY)
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-        if (OrderType() == OP_SELL)
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+        if (OrderType() == OP_BUY ) error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+        if (OrderType() == OP_SELL) error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     UpdateAfterOrder();
 }
@@ -149,8 +145,8 @@ void Kill()
     CloseAllOrders();
     while (AccountBalance() >= initial_deposit - 1)
     {
-        double lots_ = AccountFreeMargin() / Ask;
-        error = OrderSend(Symbol(), OP_BUY, lots_, Ask, 0, 0, 0, 0, 0, 0, 0);
+        double _lots = AccountFreeMargin() / Ask;
+        error = OrderSend(Symbol(), OP_BUY, _lots, Ask, 0, 0, 0, 0, 0, 0, 0);
         CloseAllOrders();
     }
     ExpertRemove();
