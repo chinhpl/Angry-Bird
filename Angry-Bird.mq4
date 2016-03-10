@@ -53,18 +53,7 @@ int start()
     /* Idle conditions */
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0 && trade_sell)
-    {
-        CloseAllOrders();
-        SendOrder(OP_BUY);
-        return 0;
-    }
-    if (AccountProfit() > 0 && trade_buy)
-    {
-        CloseAllOrders();
-        SendOrder(OP_SELL);
-        return 0;
-    }
+    if (AccountProfit() > 0) CloseAllOrders();
     /* Closes all orders if there are any */
 
     /* First order */
