@@ -50,28 +50,47 @@ int start()
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
     UpdateBeforeOrder();
+    /* Idle conditions */
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_sell)
+    {
+        CloseAllOrders();
+        SendOrder(OP_BUY);
+        return 0;
+    }
+    if (AccountProfit() > 0 && trade_buy)
+    {
+        CloseAllOrders();
+        SendOrder(OP_SELL);
+        return 0;
+    }
+    /* Closes all orders if there are any */
 
     /* First order */
     if (OrdersTotal() == 0)
     {
         if (cci_highest) SendOrder(OP_SELL);
-        if (cci_lowest ) SendOrder(OP_BUY );
+        if (cci_lowest) SendOrder(OP_BUY);
         return 0;
     }
+    /* First order */
 
     /* Proceeding orders */
-    if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
-    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
+    if (trade_sell && cci_highest && band_low > last_order_price)
+        SendOrder(OP_SELL);
+    if (trade_buy && cci_lowest && band_high < last_order_price)
+        SendOrder(OP_BUY);
+    /* Proceeding orders */
     return 0;
 }
 
 void UpdateBeforeOrder()
 {
-    band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_UPPER, 1);
-    band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25, MODE_LOWER, 1);
+    band_high = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25,
+                           MODE_UPPER, 1);
+    band_low = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, 0.25,
+                          MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -121,8 +140,12 @@ void UpdateAfterOrder()
 
 void SendOrder(int OP_TYPE)
 {
-    if (OP_TYPE == OP_SELL) error = OrderSend(Symbol(), OP_TYPE, i_lots, Bid, slip, 0, 0, name, magic_num, 0, clrHotPink);
-    if (OP_TYPE == OP_BUY ) error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name, magic_num, 0, clrLimeGreen);
+    if (OP_TYPE == OP_SELL)
+        error = OrderSend(Symbol(), OP_TYPE, i_lots, Bid, slip, 0, 0, name,
+                          magic_num, 0, clrHotPink);
+    if (OP_TYPE == OP_BUY)
+        error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name,
+                          magic_num, 0, clrLimeGreen);
 
     if (IsTesting() && error < 0) Kill();
     UpdateAfterOrder();
@@ -133,8 +156,10 @@ void CloseAllOrders()
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
-        if (OrderType() == OP_BUY ) error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
-        if (OrderType() == OP_SELL) error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+        if (OrderType() == OP_BUY)
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+        if (OrderType() == OP_SELL)
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
     }
     UpdateAfterOrder();
 }
