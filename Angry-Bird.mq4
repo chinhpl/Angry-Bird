@@ -76,9 +76,8 @@ void UpdateBeforeOrder()
     double cci_avg = 0;
 
     for (int i = 1; i <= cci_ma; i++)
-    {
         cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
-    }
+
     cci_avg /= cci_ma;
 
     if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
