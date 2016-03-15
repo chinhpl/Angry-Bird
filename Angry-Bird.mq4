@@ -16,12 +16,12 @@ int prev_time       = 0;
 int magic_num       = 2222;
 int error           = 0;
 int slip            = 100;
-extern int cci_max      =  150;
-extern int cci_min      = -150;
-extern int cci_period   =  15;
-extern int bands_period =  15;
-extern int cci_ma       =  5;
-extern double exp       =  1.5;
+extern int cci_max      =  180;
+extern int cci_min      = -180;
+extern int cci_period   =  13;
+extern int cci_ma       =  3;
+extern int bands_period =  13;
+extern double exp       =  2;
 extern double lots      =  0.01;
 uint time_start = GetTickCount();
 string name = "Ilan1.6";
@@ -52,8 +52,7 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() >= 0 && trade_sell && cci_lowest)  CloseAllOrders();
-    if (AccountProfit() >= 0 && trade_buy  && cci_highest) CloseAllOrders();
+    if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0)
