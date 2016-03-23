@@ -21,8 +21,7 @@ extern int cci_min      = -180;
 extern int cci_period   =  13;
 extern int cci_ma       =  3;
 extern int bands_period =  13;
-extern double bands_dev =  0.25;
-extern double exp       =  2;
+extern double exp       =  1.3;
 extern double lots      =  0.01;
 uint time_start = GetTickCount();
 string name = "Ilan1.6";
@@ -50,10 +49,12 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
+    if (trade_sell && AccountProfit() <= 0 && Ask < last_order_price) return 0;
+    if (trade_buy  && AccountProfit() <= 0 && Bid > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0) CloseAllOrders();
+    if (AccountProfit() >= 0.01) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0)
@@ -72,11 +73,9 @@ int start()
 }
 
 void UpdateBeforeOrder()
-{
-    band_high = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev,
-                           MODE_UPPER, 1);
-    band_low  = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev,
-                          MODE_LOWER,  1);
+{   iterations++;
+    band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -85,10 +84,10 @@ void UpdateBeforeOrder()
 
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max/* && cci < cci_avg*/) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min/* && cci > cci_avg*/) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > cci_min/* && cci < cci_avg*/) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < cci_max/* && cci > cci_avg*/) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
