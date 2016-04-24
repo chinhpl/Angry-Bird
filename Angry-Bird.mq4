@@ -16,8 +16,8 @@ int prev_time       = 0;
 int magic_num       = 2222;
 int error           = 0;
 int slip            = 100;
-extern int cci_max      =  180;
-extern int cci_min      = -180;
+extern int cci_max      =  130;
+extern int cci_min      = -130;
 extern int cci_period   =  13;
 extern int cci_ma       =  3;
 extern int bands_period =  13;
@@ -49,8 +49,8 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
-    if (trade_sell && AccountProfit() <= 0 && Ask < last_order_price) return 0;
-    if (trade_buy  && AccountProfit() <= 0 && Bid > last_order_price) return 0;
+    if (trade_sell && AccountProfit() <= 0 && Bid < last_order_price) return 0;
+    if (trade_buy  && AccountProfit() <= 0 && Ask > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
@@ -165,7 +165,6 @@ void Debug()
 {
     UpdateAfterOrder();
     UpdateBeforeOrder();
-
     int time_difference = TimeCurrent() - Time[0];
     Comment("\n- "   +
             "Lots: " + i_lots          + " - " +
