@@ -21,6 +21,7 @@ extern int cci_min      = -130;
 extern int cci_period   =  13;
 extern int cci_ma       =  3;
 extern int bands_period =  13;
+extern double bands_dev =  0.3;
 extern double exp       =  1.3;
 extern double lots      =  0.01;
 uint time_start = GetTickCount();
@@ -54,7 +55,7 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() >= 0.01) CloseAllOrders();
+    if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0)
@@ -74,8 +75,10 @@ int start()
 
 void UpdateBeforeOrder()
 {   iterations++;
-    band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    //band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    //band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    band_high      = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_UPPER, 1);
+    band_low       = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
