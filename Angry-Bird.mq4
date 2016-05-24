@@ -13,6 +13,8 @@ int total_orders    = 0;
 int iterations      = 0;
 int lotdecimal      = 2;
 int prev_time       = 0;
+int timeout         = 50000;
+int order__time     = 0;
 int magic_num       = 2222;
 int error           = 0;
 int slip            = 100;
@@ -49,8 +51,6 @@ int start()
 
     /* Idle conditions */
     if (prev_time == Time[0]) return 0; prev_time = Time[0];
-    if (trade_sell && AccountProfit() <= 0 && Bid < last_order_price) return 0;
-    if (trade_buy  && AccountProfit() <= 0 && Ask > last_order_price) return 0;
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
@@ -61,6 +61,11 @@ int start()
       if (cci_highest) SendOrder(OP_SELL);
       if (cci_lowest)  SendOrder(OP_BUY);
       return 0;
+    }
+    
+    /* Checks Timeout */
+    if (OrdersTotal() > 0 && Time[0] - order__time > timeout) {
+        CloseAllOrders();
     }
 
     /* Proceeding orders */
@@ -99,6 +104,7 @@ void UpdateAfterOrder()
     {
         last_order_price = 0;
         total_orders     = 0;
+        order__time      = Time[0];
         trade_sell       = FALSE;
         trade_buy        = FALSE;
     }
@@ -106,6 +112,7 @@ void UpdateAfterOrder()
     {
         last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
+        order__time      = Time[0];
         trade_sell       = TRUE;
         trade_buy        = FALSE;
     }
@@ -113,6 +120,7 @@ void UpdateAfterOrder()
     {
         last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
+        order__time      = Time[0];
         trade_sell       = FALSE;
         trade_buy        = TRUE;
     }
@@ -162,11 +170,11 @@ void Kill()
 
 void Debug()
 {
-    UpdateAfterOrder();
     UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
     Comment("\n- "   +
-            "Lots: " + i_lots          + " - " +
-            "Time: " + time_difference + " - " +
+            "Lots: "    + i_lots                  + " - " +
+            "Timeout: " + (Time[0] - order__time) + " - " +
+            "Time:    " + time_difference + " - " +
             "");
 }
