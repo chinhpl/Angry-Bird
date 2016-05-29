@@ -109,8 +109,8 @@ int OnCalculate(const int rates_total,
    for(i = pos; i < rates_total && !IsStopped(); i++) {
       ExtMovingBuffer[i] = 0;
       ExtStdDevBuffer[i] = 0;
-      ExtUpperBuffer [pos] = Ask + (Ask * (InpBandsDeviations / 100));
-      ExtLowerBuffer [pos] = Bid - (Bid * (InpBandsDeviations / 100));
+      ExtUpperBuffer [pos] = Ask + iStdDev(NULL, 0, InpBandsPeriod, 0, MODE_SMA, PRICE_TYPICAL, 0) * 2;
+      ExtLowerBuffer [pos] = Bid - iStdDev(NULL, 0, InpBandsPeriod, 0, MODE_SMA, PRICE_TYPICAL, 0) * 2;
      }
 //---- OnCalculate done. Return new prev_calculated.
    return(rates_total);
