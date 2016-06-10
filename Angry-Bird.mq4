@@ -13,18 +13,18 @@ int total_orders    = 0;
 int iterations      = 0;
 int lotdecimal      = 2;
 int prev_time       = 0;
-int timeout         = 50000;
+int timeout         = 86400;
 int order__time     = 0;
 int magic_num       = 2222;
 int error           = 0;
-int slip            = 100;
+int slip            = 10;
 extern int cci_max      =  130;
 extern int cci_min      = -130;
 extern int cci_period   =  13;
 extern int cci_ma       =  3;
 extern double bands_dev =  0.3;
-extern double exp       =  1.3;
-extern double lots      =  0.01;
+extern double exp          =  1.3;
+extern double lots         =  0.01;
 uint time_start = GetTickCount();
 string name = "Ilan1.6";
 
@@ -50,11 +50,13 @@ int start()
     if (!IsTesting() || IsVisualMode()) Debug();
 
     /* Idle conditions */
-    if (prev_time == Time[0]) return 0; prev_time = Time[0];
+    if (prev_time == Time[0]) return 0;
+    prev_time = Time[0];
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0) {
@@ -80,6 +82,8 @@ void UpdateBeforeOrder()
 {
     band_high      = Ask + (Ask * (bands_dev / 100));
     band_low       = Bid - (Bid * (bands_dev / 100));
+    //band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    //band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -88,10 +92,10 @@ void UpdateBeforeOrder()
 
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > cci_min && cci < cci_avg) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < cci_max && cci > cci_avg) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > cci_max/* && cci < cci_avg*/) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min/* && cci > cci_avg*/) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > cci_min/* && cci < cci_avg*/) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < cci_max/* && cci > cci_avg*/) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -172,9 +176,9 @@ void Debug()
 {
     UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
-    Comment("\n- "   +
-            "Lots: "    + i_lots                  + " - " +
-            "Timeout: " + (Time[0] - order__time) + " - " +
-            "Time:    " + time_difference + " - " +
+    Comment("\n- "      +
+            "Lots: "    + i_lots                         + " - " +
+            "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
+            "Time: "    + time_difference                + " - " +
             "");
 }
