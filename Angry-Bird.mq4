@@ -55,13 +55,13 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
-    if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_buy  && cci_high) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_sell && cci_low ) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0) {
       if (cci_highest) SendOrder(OP_SELL);
-      if (cci_lowest)  SendOrder(OP_BUY);
+      if (cci_lowest ) SendOrder(OP_BUY );
       return 0;
     }
     
@@ -71,10 +71,8 @@ int start()
     }
 
     /* Proceeding orders */
-    if (trade_sell && cci_highest && band_low > last_order_price)
-        SendOrder(OP_SELL);
-    if (trade_buy  && cci_lowest && band_high < last_order_price)
-        SendOrder(OP_BUY);
+    if (trade_sell && cci_highest    && band_low  > last_order_price) SendOrder(OP_SELL);
+    if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
     return 0;
 }
 
@@ -92,10 +90,10 @@ void UpdateBeforeOrder()
 
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max/* && cci < cci_avg*/) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min/* && cci > cci_avg*/) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > cci_min/* && cci < cci_avg*/) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < cci_max/* && cci > cci_avg*/) cci_low     = 1; else cci_low     = 0;
+    if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > 0      ) cci_high    = 1; else cci_high    = 0;
+    if (cci_avg < 0      ) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -149,13 +147,16 @@ void SendOrder(int OP_TYPE)
 
 void CloseAllOrders()
 {
+    color clr = clrBlue;
+    if (Time[0] - order__time > timeout) clr = clrGold;
+    
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
         if (OrderType() == OP_BUY)
-            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clrBlue);
+            error = OrderClose(OrderTicket(), OrderLots(), Bid, slip, clr);
         if (OrderType() == OP_SELL)
-            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clrBlue);
+            error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clr);
     }
     UpdateAfterOrder();
 }
@@ -165,8 +166,7 @@ void Kill()
     CloseAllOrders();
     while (AccountBalance() >= initial_deposit - 1)
     {
-        double _lots = AccountFreeMargin() / Ask;
-        error = OrderSend(Symbol(), OP_BUY, _lots, Ask, 0, 0, 0, 0, 0, 0, 0);
+        error = OrderSend(Symbol(), OP_BUY, 0.01, Ask, 0, 0, 0, 0, 0, 0, 0);
         CloseAllOrders();
     }
     ExpertRemove();
