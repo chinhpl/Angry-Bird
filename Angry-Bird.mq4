@@ -71,7 +71,7 @@ int start()
     }
 
     /* Proceeding orders */
-    if (trade_sell && cci_highest    && band_low  > last_order_price) SendOrder(OP_SELL);
+    if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
     if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
     return 0;
 }
