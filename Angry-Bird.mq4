@@ -2,8 +2,6 @@ bool cci_highest = FALSE;
 bool cci_lowest  = FALSE;
 bool trade_sell  = FALSE;
 bool trade_buy   = FALSE;
-bool cci_high    = FALSE;
-bool cci_low     = FALSE;
 double last_order_price = 0;
 double band_high        = 0;
 double band_low         = 0;
@@ -22,7 +20,7 @@ extern int cci_max      =  130;
 extern int cci_min      = -130;
 extern int cci_period   =  13;
 extern int cci_ma       =  3;
-extern double bands_dev =  0.3;
+extern int bands_dev    =  13;
 extern double exp          =  1.3;
 extern double lots         =  0.01;
 uint time_start = GetTickCount();
@@ -64,7 +62,7 @@ int start()
       if (cci_lowest ) SendOrder(OP_BUY );
       return 0;
     }
-    
+
     /* Checks Timeout */
     if (OrdersTotal() > 0 && Time[0] - order__time > timeout) {
         CloseAllOrders();
@@ -78,10 +76,8 @@ int start()
 
 void UpdateBeforeOrder()
 {
-    band_high      = Ask + (Ask * (bands_dev / 100));
-    band_low       = Bid - (Bid * (bands_dev / 100));
-    //band_high      = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
-    //band_low       = iBands(0, 0, bands_period, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
+    band_high      = iBands(0, 0, bands_dev, 2, 0, PRICE_TYPICAL, MODE_UPPER, 1);
+    band_low       = iBands(0, 0, bands_dev, 2, 0, PRICE_TYPICAL, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -92,8 +88,6 @@ void UpdateBeforeOrder()
 
     if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
     if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
-    if (cci_avg > 0      ) cci_high    = 1; else cci_high    = 0;
-    if (cci_avg < 0      ) cci_low     = 1; else cci_low     = 0;
 }
 
 void UpdateAfterOrder()
@@ -149,7 +143,7 @@ void CloseAllOrders()
 {
     color clr = clrBlue;
     if (Time[0] - order__time > timeout) clr = clrGold;
-    
+
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
         error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
