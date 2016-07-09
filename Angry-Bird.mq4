@@ -97,28 +97,10 @@ void UpdateBeforeOrder()
     for (int j = 0; j < 1024; ++j)
     {
         if (MathRound(iCCI(0, 0, 2 , PRICE_TYPICAL, 1)) == truth_buy[j][2 ] &&
-            MathRound(iCCI(0, 0, 3 , PRICE_TYPICAL, 1)) == truth_buy[j][3 ] &&
-            MathRound(iCCI(0, 0, 4 , PRICE_TYPICAL, 1)) == truth_buy[j][4 ] &&
             MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_buy[j][5 ] &&
-            MathRound(iCCI(0, 0, 6 , PRICE_TYPICAL, 1)) == truth_buy[j][6 ] &&
-            MathRound(iCCI(0, 0, 7 , PRICE_TYPICAL, 1)) == truth_buy[j][7 ] &&
-            MathRound(iCCI(0, 0, 8 , PRICE_TYPICAL, 1)) == truth_buy[j][8 ] &&
-            MathRound(iCCI(0, 0, 9 , PRICE_TYPICAL, 1)) == truth_buy[j][9 ] &&
             MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_buy[j][10] &&
-            MathRound(iCCI(0, 0, 11, PRICE_TYPICAL, 1)) == truth_buy[j][11] &&
-            MathRound(iCCI(0, 0, 12, PRICE_TYPICAL, 1)) == truth_buy[j][12] &&
-            MathRound(iCCI(0, 0, 13, PRICE_TYPICAL, 1)) == truth_buy[j][13] &&
-            MathRound(iCCI(0, 0, 14, PRICE_TYPICAL, 1)) == truth_buy[j][14] &&
             MathRound(iCCI(0, 0, 15, PRICE_TYPICAL, 1)) == truth_buy[j][15] &&
-            MathRound(iCCI(0, 0, 16, PRICE_TYPICAL, 1)) == truth_buy[j][16] &&
-            MathRound(iCCI(0, 0, 17, PRICE_TYPICAL, 1)) == truth_buy[j][17] &&
-            MathRound(iCCI(0, 0, 18, PRICE_TYPICAL, 1)) == truth_buy[j][18] &&
-            MathRound(iCCI(0, 0, 19, PRICE_TYPICAL, 1)) == truth_buy[j][19] &&
             MathRound(iCCI(0, 0, 20, PRICE_TYPICAL, 1)) == truth_buy[j][20] &&
-            MathRound(iCCI(0, 0, 21, PRICE_TYPICAL, 1)) == truth_buy[j][21] &&
-            MathRound(iCCI(0, 0, 22, PRICE_TYPICAL, 1)) == truth_buy[j][22] &&
-            MathRound(iCCI(0, 0, 23, PRICE_TYPICAL, 1)) == truth_buy[j][23] &&
-            MathRound(iCCI(0, 0, 24, PRICE_TYPICAL, 1)) == truth_buy[j][24] &&
             MathRound(iCCI(0, 0, 25, PRICE_TYPICAL, 1)) == truth_buy[j][25] &&
             MathRound(iCCI(0, 0, 30, PRICE_TYPICAL, 1)) == truth_buy[j][30] &&
             MathRound(iCCI(0, 0, 35, PRICE_TYPICAL, 1)) == truth_buy[j][35] &&
@@ -132,23 +114,9 @@ void UpdateBeforeOrder()
         }
         if (MathRound(iCCI(0, 0, 2 , PRICE_TYPICAL, 1)) == truth_sell[j][2 ] &&
             MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_sell[j][5 ] &&
-            MathRound(iCCI(0, 0, 6 , PRICE_TYPICAL, 1)) == truth_sell[j][6 ] &&
-            MathRound(iCCI(0, 0, 7 , PRICE_TYPICAL, 1)) == truth_sell[j][7 ] &&
-            MathRound(iCCI(0, 0, 8 , PRICE_TYPICAL, 1)) == truth_sell[j][8 ] &&
-            MathRound(iCCI(0, 0, 9 , PRICE_TYPICAL, 1)) == truth_sell[j][9 ] &&
             MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_sell[j][10] &&
-            MathRound(iCCI(0, 0, 11, PRICE_TYPICAL, 1)) == truth_sell[j][11] &&
-            MathRound(iCCI(0, 0, 12, PRICE_TYPICAL, 1)) == truth_sell[j][12] &&
-            MathRound(iCCI(0, 0, 13, PRICE_TYPICAL, 1)) == truth_sell[j][13] &&
-            MathRound(iCCI(0, 0, 14, PRICE_TYPICAL, 1)) == truth_sell[j][14] &&
             MathRound(iCCI(0, 0, 15, PRICE_TYPICAL, 1)) == truth_sell[j][15] &&
-            MathRound(iCCI(0, 0, 16, PRICE_TYPICAL, 1)) == truth_sell[j][16] &&
-            MathRound(iCCI(0, 0, 17, PRICE_TYPICAL, 1)) == truth_sell[j][17] &&
-            MathRound(iCCI(0, 0, 18, PRICE_TYPICAL, 1)) == truth_sell[j][18] &&
-            MathRound(iCCI(0, 0, 19, PRICE_TYPICAL, 1)) == truth_sell[j][19] &&
             MathRound(iCCI(0, 0, 20, PRICE_TYPICAL, 1)) == truth_sell[j][20] &&
-            MathRound(iCCI(0, 0, 21, PRICE_TYPICAL, 1)) == truth_sell[j][21] &&
-            MathRound(iCCI(0, 0, 22, PRICE_TYPICAL, 1)) == truth_sell[j][22] &&
             MathRound(iCCI(0, 0, 25, PRICE_TYPICAL, 1)) == truth_sell[j][25] &&
             MathRound(iCCI(0, 0, 30, PRICE_TYPICAL, 1)) == truth_sell[j][30] &&
             MathRound(iCCI(0, 0, 35, PRICE_TYPICAL, 1)) == truth_sell[j][35] &&
@@ -156,10 +124,6 @@ void UpdateBeforeOrder()
             MathRound(iCCI(0, 0, 45, PRICE_TYPICAL, 1)) == truth_sell[j][45] &&
             MathRound(iCCI(0, 0, 50, PRICE_TYPICAL, 1)) == truth_sell[j][50] &&
             MathRound(iCCI(0, 0, 55, PRICE_TYPICAL, 1)) == truth_sell[j][55] &&
-            MathRound(iCCI(0, 0, 56, PRICE_TYPICAL, 1)) == truth_sell[j][56] &&
-            MathRound(iCCI(0, 0, 57, PRICE_TYPICAL, 1)) == truth_sell[j][57] &&
-            MathRound(iCCI(0, 0, 58, PRICE_TYPICAL, 1)) == truth_sell[j][58] &&
-            MathRound(iCCI(0, 0, 59, PRICE_TYPICAL, 1)) == truth_sell[j][59] &&
             MathRound(iCCI(0, 0, 60, PRICE_TYPICAL, 1)) == truth_sell[j][60])
         {
             cci_highest = true;
