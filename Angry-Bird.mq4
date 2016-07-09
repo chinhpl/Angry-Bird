@@ -54,7 +54,8 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
+    if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0) {
