@@ -54,8 +54,7 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
-    if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
-    if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
+    if (AccountProfit() > 0) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0) {
@@ -111,6 +110,7 @@ void UpdateBeforeOrder()
             MathRound(iCCI(0, 0, 60, PRICE_TYPICAL, 1)) == truth_buy[j][60])
         {
             cci_lowest = true;
+            return;
         }
         if (MathRound(iCCI(0, 0, 2 , PRICE_TYPICAL, 1)) == truth_sell[j][2 ] &&
             MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_sell[j][5 ] &&
@@ -127,6 +127,7 @@ void UpdateBeforeOrder()
             MathRound(iCCI(0, 0, 60, PRICE_TYPICAL, 1)) == truth_sell[j][60])
         {
             cci_highest = true;
+            return;
         }
     }
 }
