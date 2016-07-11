@@ -1,4 +1,4 @@
-#include "data.mqh"
+#include "C:\Users\Elazar\AppData\Roaming\MetaQuotes\Terminal\038983A63A5CE68161CBF3B0C5B3FC6A\tester\files\NNMap.txt"
 bool          cci_highest      = FALSE;
 bool          cci_lowest       = FALSE;
 bool          trade_sell       = FALSE;
@@ -94,7 +94,10 @@ void UpdateBeforeOrder()
 */
     cci_highest = false;
     cci_lowest  = false;
-    for (int j = 0; j < 8192; ++j)
+    int bsize   = truth_buy [0][0];
+    int ssize   = truth_sell[0][0];
+
+    for (int j = 0; j < bsize; ++j)
     {
         if (MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_buy[j][5 ] &&
             MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_buy[j][10] &&
@@ -106,12 +109,15 @@ void UpdateBeforeOrder()
             cci_lowest = true;
             return;
         }
-        if (MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_sell[j][5 ] &&
-            MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_sell[j][10] &&
-            MathRound(iCCI(0, 0, 15, PRICE_TYPICAL, 1)) == truth_sell[j][15] &&
-            MathRound(iCCI(0, 0, 20, PRICE_TYPICAL, 1)) == truth_sell[j][20] &&
-            MathRound(iCCI(0, 0, 25, PRICE_TYPICAL, 1)) == truth_sell[j][25] &&
-            MathRound(iCCI(0, 0, 30, PRICE_TYPICAL, 1)) == truth_sell[j][30])
+    }
+    for (int k = 0; k < ssize; ++k)
+    {
+        if (MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_sell[k][5 ] &&
+            MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_sell[k][10] &&
+            MathRound(iCCI(0, 0, 15, PRICE_TYPICAL, 1)) == truth_sell[k][15] &&
+            MathRound(iCCI(0, 0, 20, PRICE_TYPICAL, 1)) == truth_sell[k][20] &&
+            MathRound(iCCI(0, 0, 25, PRICE_TYPICAL, 1)) == truth_sell[k][25] &&
+            MathRound(iCCI(0, 0, 30, PRICE_TYPICAL, 1)) == truth_sell[k][30])
         {
             cci_highest = true;
             return;
