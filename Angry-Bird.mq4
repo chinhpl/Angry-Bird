@@ -97,7 +97,7 @@ void UpdateBeforeOrder()
     int bsize   = truth_buy [0][0];
     int ssize   = truth_sell[0][0];
 
-    for (int j = 0; j < bsize; ++j)
+    for (int j = 0; j <= bsize; ++j)
     {
         if (MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_buy[j][5 ] &&
             MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_buy[j][10] &&
@@ -110,7 +110,7 @@ void UpdateBeforeOrder()
             return;
         }
     }
-    for (int k = 0; k < ssize; ++k)
+    for (int k = 0; k <= ssize; ++k)
     {
         if (MathRound(iCCI(0, 0, 5 , PRICE_TYPICAL, 1)) == truth_sell[k][5 ] &&
             MathRound(iCCI(0, 0, 10, PRICE_TYPICAL, 1)) == truth_sell[k][10] &&
