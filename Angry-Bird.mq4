@@ -101,7 +101,10 @@ void UpdateBeforeOrder()
     {
         if (MathRound(iCCI(0, 0, 2, PRICE_TYPICAL, 1)) == truth_buy[j][2] &&
             MathRound(iCCI(0, 0, 3, PRICE_TYPICAL, 1)) == truth_buy[j][3] &&
-            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_buy[j][4])
+            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_buy[j][4] &&
+            MathRound(iCCI(0, 0, 5, PRICE_TYPICAL, 1)) == truth_buy[j][5] &&
+            MathRound(iCCI(0, 0, 6, PRICE_TYPICAL, 1)) == truth_buy[j][6] &&
+            MathRound(iCCI(0, 0, 7, PRICE_TYPICAL, 1)) == truth_buy[j][7])
         {
             cci_lowest = true;
             return;
@@ -111,7 +114,9 @@ void UpdateBeforeOrder()
     {
         if (MathRound(iCCI(0, 0, 2, PRICE_TYPICAL, 1)) == truth_sell[k][2] &&
             MathRound(iCCI(0, 0, 3, PRICE_TYPICAL, 1)) == truth_sell[k][3] &&
-            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_sell[k][4])
+            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_sell[k][4] &&
+            MathRound(iCCI(0, 0, 5, PRICE_TYPICAL, 1)) == truth_sell[k][5] &&
+            MathRound(iCCI(0, 0, 7, PRICE_TYPICAL, 1)) == truth_sell[k][7])
         {
             cci_highest = true;
             return;
