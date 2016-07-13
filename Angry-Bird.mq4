@@ -17,9 +17,9 @@ int           order__time      = 0;
 int           magic_num        = 2222;
 int           error            = 0;
 int           slip             = 10;
-extern int    cci_max          = 130;
-extern int    cci_min          = -130;
-extern int    cci_period      = 13;
+extern int    cci_min          = 3;
+extern int    cci_max          = 8;
+extern int    cci_interval     = 1;
 extern int    bands_period    = 13;
 extern double bands_dev        = 0.3;
 extern double exp              = 1.3;
@@ -99,30 +99,28 @@ void UpdateBeforeOrder()
 
     for (int j = 0; j <= bsize; ++j)
     {
-        if (MathRound(iCCI(0, 0, 2, PRICE_TYPICAL, 1)) == truth_buy[j][2] &&
-            MathRound(iCCI(0, 0, 3, PRICE_TYPICAL, 1)) == truth_buy[j][3] &&
-            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_buy[j][4] &&
-            MathRound(iCCI(0, 0, 5, PRICE_TYPICAL, 1)) == truth_buy[j][5] &&
-            MathRound(iCCI(0, 0, 6, PRICE_TYPICAL, 1)) == truth_buy[j][6] &&
-            MathRound(iCCI(0, 0, 7, PRICE_TYPICAL, 1)) == truth_buy[j][7] &&
-            MathRound(iCCI(0, 0, 8, PRICE_TYPICAL, 1)) == truth_buy[j][8])
+        for (int b_i = cci_min; b_i <= cci_max; b_i += cci_interval)
         {
-            cci_lowest = true;
-            return;
+            if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) != truth_buy[j][b_i])
+                break;
+            if (b_i == cci_max)
+            {
+                cci_lowest = true;
+                return;
+            }
         }
     }
     for (int k = 0; k <= ssize; ++k)
     {
-        if (MathRound(iCCI(0, 0, 2, PRICE_TYPICAL, 1)) == truth_sell[k][2] &&
-            MathRound(iCCI(0, 0, 3, PRICE_TYPICAL, 1)) == truth_sell[k][3] &&
-            MathRound(iCCI(0, 0, 4, PRICE_TYPICAL, 1)) == truth_sell[k][4] &&
-            MathRound(iCCI(0, 0, 5, PRICE_TYPICAL, 1)) == truth_sell[k][5] &&
-            MathRound(iCCI(0, 0, 6, PRICE_TYPICAL, 1)) == truth_sell[k][6] &&
-            MathRound(iCCI(0, 0, 7, PRICE_TYPICAL, 1)) == truth_sell[k][7] &&
-            MathRound(iCCI(0, 0, 8, PRICE_TYPICAL, 1)) == truth_sell[k][8])
+        for (int s_i = cci_min; s_i <= cci_max; s_i += cci_interval)
         {
-            cci_highest = true;
-            return;
+            if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) != truth_sell[k][s_i])
+                break;
+            if (s_i == cci_max)
+            {
+                cci_highest = true;
+                return;
+            }
         }
     }
 }
