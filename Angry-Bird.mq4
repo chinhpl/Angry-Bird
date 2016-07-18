@@ -8,6 +8,10 @@ double        band_high        = 0;
 double        band_low         = 0;
 double        i_lots           = 0;
 int           initial_deposit  = 0;
+int           buy_score        = 0;
+int           sell_score       = 0;
+int           high_sell_score  = 0;
+int           high_buy_score   = 0;
 int           total_orders     = 0;
 int           iterations       = 0;
 int           lotdecimal       = 2;
@@ -20,7 +24,8 @@ int           slip             = 10;
 extern int    cci_min          = 3;
 extern int    cci_max          = 8;
 extern int    cci_interval     = 1;
-extern int    bands_period    = 13;
+extern int    bands_period     = 13;
+extern int    score            = 100;
 extern double bands_dev        = 0.3;
 extern double exp              = 1.3;
 extern double lots             = 0.01;
@@ -96,27 +101,42 @@ void UpdateBeforeOrder()
     cci_lowest  = false;
     int bsize   = truth_buy [0][0];
     int ssize   = truth_sell[0][0];
+    int checks  = (cci_max - cci_min) + 1;
 
+    high_buy_score = 0;
     for (int j = 0; j <= bsize; ++j)
     {
+        buy_score = 0;
+
         for (int b_i = cci_min; b_i <= cci_max; b_i += cci_interval)
         {
-            if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) != truth_buy[j][b_i])
-                break;
-            if (b_i == cci_max)
+            if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) == truth_buy[j][b_i])
+            {
+                buy_score++;
+                if (high_buy_score < buy_score) high_buy_score = buy_score;
+            }
+
+            if ((buy_score / checks) * 100 >= score)
             {
                 cci_lowest = true;
                 return;
             }
         }
     }
+    high_sell_score = 0;
     for (int k = 0; k <= ssize; ++k)
     {
+        sell_score = 0;
+
         for (int s_i = cci_min; s_i <= cci_max; s_i += cci_interval)
         {
-            if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) != truth_sell[k][s_i])
-                break;
-            if (s_i == cci_max)
+            if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) == truth_sell[k][s_i])
+            {
+                sell_score++;
+                if (high_sell_score < sell_score) high_sell_score = sell_score;
+            }
+
+            if ((sell_score / checks) * 100 >= score)
             {
                 cci_highest = true;
                 return;
@@ -205,9 +225,12 @@ void Debug()
 {
     UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
+    double checks = (cci_max - cci_min) + 1;
     Comment("\n- "      +
             "Lots: "    + i_lots                         + " - " +
             "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
+            "BS: "      + (high_buy_score  / checks) * 100 + " - " +
+            "SS: "      + (high_sell_score / checks) * 100 + " - " +
             "Time: "    + time_difference                + " - " +
             "");
 }
