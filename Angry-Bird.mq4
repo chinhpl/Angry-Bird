@@ -105,43 +105,50 @@ void UpdateBeforeOrder()
     int ssize      = truth_sell[0][0];
     double checks  = (cci_max - cci_min) + 1;
 
-    high_buy_score = 0;
-    for (int j = 0; j <= bsize; ++j)
+    high_buy_score  = 0;
+    high_sell_score = 0;
+    
+    if (!trade_sell)
     {
-        buy_score = 0;
-
-        for (int b_i = cci_min; b_i <= cci_max; b_i += cci_interval)
+        for (int j = 0; j <= bsize; ++j)
         {
-            if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) == truth_buy[j][b_i])
+            buy_score = 0;
+    
+            for (int b_i = cci_min; b_i <= cci_max; b_i += cci_interval)
             {
-                buy_score++;
-                if (high_buy_score < buy_score) high_buy_score = buy_score;
-            }
-
-            if ((buy_score / checks) * 100 >= score)
-            {
-                cci_lowest = true;
-                return;
+                if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) == truth_buy[j][b_i])
+                {
+                    buy_score++;
+                    if (high_buy_score < buy_score) high_buy_score = buy_score;
+                }
+    
+                if ((buy_score / checks) * 100 >= score)
+                {
+                    cci_lowest = true;
+                    return;
+                }
             }
         }
     }
-    high_sell_score = 0;
-    for (int k = 0; k <= ssize; ++k)
+    if (!trade_buy)
     {
-        sell_score = 0;
-
-        for (int s_i = cci_min; s_i <= cci_max; s_i += cci_interval)
+        for (int k = 0; k <= ssize; ++k)
         {
-            if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) == truth_sell[k][s_i])
+            sell_score = 0;
+    
+            for (int s_i = cci_min; s_i <= cci_max; s_i += cci_interval)
             {
-                sell_score++;
-                if (high_sell_score < sell_score) high_sell_score = sell_score;
-            }
-
-            if ((sell_score / checks) * 100 >= score)
-            {
-                cci_highest = true;
-                return;
+                if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) == truth_sell[k][s_i])
+                {
+                    sell_score++;
+                    if (high_sell_score < sell_score) high_sell_score = sell_score;
+                }
+    
+                if ((sell_score / checks) * 100 >= score)
+                {
+                    cci_highest = true;
+                    return;
+                }
             }
         }
     }
