@@ -77,6 +77,8 @@ int start()
     /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
     if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
+    
+    if (!IsTesting() || IsVisualMode()) Debug();
     return 0;
 }
 
@@ -97,11 +99,11 @@ void UpdateBeforeOrder()
 
 
 */
-    cci_highest = false;
-    cci_lowest  = false;
-    int bsize   = truth_buy [0][0];
-    int ssize   = truth_sell[0][0];
-    int checks  = (cci_max - cci_min) + 1;
+    cci_highest    = false;
+    cci_lowest     = false;
+    int bsize      = truth_buy [0][0];
+    int ssize      = truth_sell[0][0];
+    double checks  = (cci_max - cci_min) + 1;
 
     high_buy_score = 0;
     for (int j = 0; j <= bsize; ++j)
