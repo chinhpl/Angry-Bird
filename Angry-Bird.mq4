@@ -59,6 +59,7 @@ int start()
     UpdateBeforeOrder();
 
     /* Closes all orders if there are any */
+    RefreshRates();
     if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
     if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
 
@@ -70,7 +71,7 @@ int start()
     }
 
     /* Checks Timeout */
-    if (OrdersTotal() > 0 && Time[0] - order__time > timeout) {
+    if (OrdersTotal() > 0 && Time[0] - order__time > timeout && IsTesting()) {
         CloseAllOrders();
     }
 
@@ -217,6 +218,7 @@ void CloseAllOrders()
             error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clr);
     }
     UpdateAfterOrder();
+    UpdateBeforeOrder();
 }
 
 void Kill()
@@ -238,8 +240,8 @@ void Debug()
     Comment("\n- "      +
             "Lots: "    + i_lots                         + " - " +
             "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
-            "BS: "      + (high_buy_score  / checks) * 100 + " - " +
-            "SS: "      + (high_sell_score / checks) * 100 + " - " +
+            "BS: "      + MathRound((high_buy_score  / checks) * 100) + " - " +
+            "SS: "      + MathRound((high_sell_score / checks) * 100) + " - " +
             "Time: "    + time_difference                + " - " +
             "");
 }
