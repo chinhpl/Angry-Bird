@@ -87,19 +87,7 @@ void UpdateBeforeOrder()
 {
     band_high = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_UPPER, 1);
     band_low  = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_LOWER, 1);
-/*
-    double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
-    double cci_avg = 0;
 
-    for (int i = 1; i <= cci_ma; i++)
-        cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
-
-    cci_avg /= cci_ma;
-    if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
-
-
-*/
     cci_highest    = false;
     cci_lowest     = false;
     int bsize      = truth_buy [0][0];
@@ -109,7 +97,7 @@ void UpdateBeforeOrder()
     high_buy_score  = 0;
     high_sell_score = 0;
     
-    if (!trade_sell)
+    if (true)
     {
         for (int j = 0; j <= bsize; ++j)
         {
@@ -131,7 +119,7 @@ void UpdateBeforeOrder()
             }
         }
     }
-    if (!trade_buy)
+    if (true)
     {
         for (int k = 0; k <= ssize; ++k)
         {
@@ -218,7 +206,6 @@ void CloseAllOrders()
             error = OrderClose(OrderTicket(), OrderLots(), Ask, slip, clr);
     }
     UpdateAfterOrder();
-    UpdateBeforeOrder();
 }
 
 void Kill()
