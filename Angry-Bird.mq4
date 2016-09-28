@@ -1,4 +1,3 @@
-#include "C:\Users\Elazar\AppData\Roaming\MetaQuotes\Terminal\038983A63A5CE68161CBF3B0C5B3FC6A\tester\files\NNMap.txt"
 bool          cci_highest      = FALSE;
 bool          cci_lowest       = FALSE;
 bool          trade_sell       = FALSE;
@@ -8,10 +7,6 @@ double        band_high        = 0;
 double        band_low         = 0;
 double        i_lots           = 0;
 int           initial_deposit  = 0;
-int           buy_score        = 0;
-int           sell_score       = 0;
-int           high_sell_score  = 0;
-int           high_buy_score   = 0;
 int           total_orders     = 0;
 int           iterations       = 0;
 int           lotdecimal       = 2;
@@ -21,11 +16,10 @@ int           order__time      = 0;
 int           magic_num        = 2222;
 int           error            = 0;
 int           slip             = 10;
-extern int    cci_min          = 3;
-extern int    cci_max          = 8;
-extern int    cci_interval     = 1;
-extern int    bands_period     = 13;
-extern int    score            = 100;
+extern int    cci_max          = 130;
+extern int    cci_min          = -130;
+extern int    cci_period       = 13;
+extern int    cci_ma           = 3;
 extern double bands_dev        = 0.3;
 extern double exp              = 1.3;
 extern double lots             = 0.01;
@@ -64,83 +58,37 @@ int start()
     if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
 
     /* First order */
-    if (OrdersTotal() == 0) {
-      if (cci_highest) SendOrder(OP_SELL);
-      if (cci_lowest ) SendOrder(OP_BUY );
-      return 0;
+    if (OrdersTotal() == 0)
+    {
+        if (cci_highest) SendOrder(OP_SELL);
+        if (cci_lowest) SendOrder(OP_BUY);
+        return 0;
     }
 
     /* Checks Timeout */
-    if (OrdersTotal() > 0 && Time[0] - order__time > timeout && IsTesting()) {
+    if (OrdersTotal() > 0 && Time[0] - order__time > timeout && IsTesting())
         CloseAllOrders();
-    }
 
     /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
     if (trade_buy  && cci_lowest  && band_high < last_order_price) SendOrder(OP_BUY );
-    
-    if (!IsTesting() || IsVisualMode()) Debug();
     return 0;
 }
 
 void UpdateBeforeOrder()
 {
-    band_high = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_UPPER, 1);
-    band_low  = iEnvelopes(0, 0, bands_period, MODE_SMA, 0, PRICE_TYPICAL, bands_dev, MODE_LOWER, 1);
+    band_high      = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_HIGH, bands_dev, MODE_UPPER, 1);
+    band_low       = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_LOW , bands_dev, MODE_LOWER, 1);
+    double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
+    double cci_avg = 0;
 
-    cci_highest    = false;
-    cci_lowest     = false;
-    int bsize      = truth_buy [0][0];
-    int ssize      = truth_sell[0][0];
-    double checks  = (cci_max - cci_min) + 1;
+    for (int i = 1; i <= cci_ma; i++)
+        cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
 
-    high_buy_score  = 0;
-    high_sell_score = 0;
-    
-    if (true)
-    {
-        for (int j = 0; j <= bsize; ++j)
-        {
-            buy_score = 0;
-    
-            for (int b_i = cci_min; b_i <= cci_max; b_i += cci_interval)
-            {
-                if (MathRound(iCCI(0, 0, b_i, PRICE_TYPICAL, 1)) == truth_buy[j][b_i])
-                {
-                    buy_score++;
-                    if (high_buy_score < buy_score) high_buy_score = buy_score;
-                }
-    
-                if ((buy_score / checks) * 100 >= score)
-                {
-                    cci_lowest = true;
-                    return;
-                }
-            }
-        }
-    }
-    if (true)
-    {
-        for (int k = 0; k <= ssize; ++k)
-        {
-            sell_score = 0;
-    
-            for (int s_i = cci_min; s_i <= cci_max; s_i += cci_interval)
-            {
-                if (MathRound(iCCI(0, 0, s_i, PRICE_TYPICAL, 1)) == truth_sell[k][s_i])
-                {
-                    sell_score++;
-                    if (high_sell_score < sell_score) high_sell_score = sell_score;
-                }
-    
-                if ((sell_score / checks) * 100 >= score)
-                {
-                    cci_highest = true;
-                    return;
-                }
-            }
-        }
-    }
+    cci_avg /= cci_ma;
+
+    if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
 }
 
 void UpdateAfterOrder()
@@ -223,12 +171,9 @@ void Debug()
 {
     UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
-    double checks = (cci_max - cci_min) + 1;
     Comment("\n- "      +
             "Lots: "    + i_lots                         + " - " +
             "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
-            "BS: "      + MathRound((high_buy_score  / checks) * 100) + " - " +
-            "SS: "      + MathRound((high_sell_score / checks) * 100) + " - " +
             "Time: "    + time_difference                + " - " +
             "");
 }
