@@ -54,8 +54,8 @@ int start()
 
     /* Closes all orders if there are any */
     RefreshRates();
-    if (AccountProfit() > 0 && trade_buy  && !cci_lowest ) CloseAllOrders();
-    if (AccountProfit() > 0 && trade_sell && !cci_highest) CloseAllOrders();
+    if (AccountProfit() > 0.01 && trade_buy  && !cci_lowest ) CloseAllOrders();
+    if (AccountProfit() > 0.01 && trade_sell && !cci_highest) CloseAllOrders();
 
     /* First order */
     if (OrdersTotal() == 0)
@@ -78,7 +78,7 @@ int start()
 void UpdateBeforeOrder()
 {
     band_high      = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_HIGH, bands_dev, MODE_UPPER, 1);
-    band_low       = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_LOW , bands_dev, MODE_LOWER, 1);
+    band_low       = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_LOW,  bands_dev, MODE_LOWER, 1);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -97,9 +97,21 @@ void UpdateAfterOrder()
     i_lots            = NormalizeDouble(lots * multiplier, lotdecimal);
 
     error = OrderSelect(OrdersTotal() - 1, SELECT_BY_POS, MODE_TRADES);
+    last_order_price = OrderOpenPrice();
+
+    /* In case user modifies a previous order */
+    for (int i = 0; i < OrdersTotal() - 1; i++)
+    {
+        error = OrderSelect(i, SELECT_BY_POS, MODE_TRADES);
+
+        if (OrderOpenPrice() > last_order_price && OrderType() == OP_SELL)
+            last_order_price = OrderOpenPrice();
+        if (OrderOpenPrice() < last_order_price && OrderType() == OP_BUY)
+            last_order_price = OrderOpenPrice();
+    }
+
     if (OrdersTotal() == 0)
     {
-        last_order_price = 0;
         total_orders     = 0;
         order__time      = Time[0];
         trade_sell       = FALSE;
@@ -107,7 +119,6 @@ void UpdateAfterOrder()
     }
     else if (OrderType() == OP_SELL)
     {
-        last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
         order__time      = Time[0];
         trade_sell       = TRUE;
@@ -115,7 +126,6 @@ void UpdateAfterOrder()
     }
     else if (OrderType() == OP_BUY)
     {
-        last_order_price = OrderOpenPrice();
         total_orders     = OrdersTotal();
         order__time      = Time[0];
         trade_sell       = FALSE;
@@ -174,6 +184,7 @@ void Debug()
     Comment("\n- "      +
             "Lots: "    + i_lots                         + " - " +
             "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
+            "Last: "    + last_order_price               + " - " +
             "Time: "    + time_difference                + " - " +
             "");
 }
