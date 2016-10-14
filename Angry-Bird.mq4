@@ -77,8 +77,8 @@ int start()
 
 void UpdateBeforeOrder()
 {
-    band_high      = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_HIGH, bands_dev, MODE_UPPER, 1);
-    band_low       = iEnvelopes(0, 0, 1, MODE_SMA, 0, PRICE_LOW,  bands_dev, MODE_LOWER, 1);
+    band_high      = Ask * (1 + bands_dev / 100);
+    band_low       = Bid * (1 - bands_dev / 100);
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -87,8 +87,8 @@ void UpdateBeforeOrder()
 
     cci_avg /= cci_ma;
 
-    if (cci_avg > cci_max) cci_highest = 1; else cci_highest = 0;
-    if (cci_avg < cci_min) cci_lowest  = 1; else cci_lowest  = 0;
+    if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
+    if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
 }
 
 void UpdateAfterOrder()
