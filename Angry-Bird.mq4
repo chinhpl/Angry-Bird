@@ -11,11 +11,11 @@ int           total_orders     = 0;
 int           iterations       = 0;
 int           lotdecimal       = 2;
 int           prev_time        = 0;
-int           timeout          = 86400;
+int           timeout          = 999999999;
 int           order__time      = 0;
 int           magic_num        = 2222;
 int           error            = 0;
-int           slip             = 10;
+int           slip             = 1000;
 extern int    cci_max          = 130;
 extern int    cci_min          = -130;
 extern int    cci_period       = 13;
@@ -146,7 +146,8 @@ void SendOrder(int OP_TYPE)
         error = OrderSend(Symbol(), OP_TYPE, i_lots, Ask, slip, 0, 0, name,
                           magic_num, 0, clrLimeGreen);
 
-    if (IsTesting() && error < 0) Kill();
+    if (IsTesting()  && error < 0) Kill();
+    if (!IsTesting() && error < 0) Print("Order failed.");
     UpdateAfterOrder();
 }
 
