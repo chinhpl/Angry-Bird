@@ -11,20 +11,25 @@ int           total_orders     = 0;
 int           iterations       = 0;
 int           lotdecimal       = 2;
 int           prev_time        = 0;
-int           timeout          = 999999999;
+int           timeout          = 86400;
 int           order__time      = 0;
 int           magic_num        = 2222;
 int           error            = 0;
-int           slip             = 1000;
+int           slip             = 100;
+/*
 extern int    cci_max          = 130;
 extern int    cci_min          = -130;
 extern int    cci_period       = 13;
 extern int    cci_ma           = 3;
-extern double bands_dev        = 0.3;
-extern double exp              = 1.3;
+*/
+extern double bands_dev        = 1;
+extern double exp              = 1.5;
 extern double lots             = 0.01;
 uint          time_start       = GetTickCount();
 string        name             = "Ilan1.6";
+
+#include "AngryNetwork.mq4";
+Network my_network(5, 2, 1);
 
 int init()
 {
@@ -32,6 +37,7 @@ int init()
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
+
     return 0;
 }
 
@@ -54,9 +60,12 @@ int start()
 
     /* Closes all orders if there are any */
     RefreshRates();
-    if (AccountProfit() > 0.01 && trade_buy  && !cci_lowest ) CloseAllOrders();
-    if (AccountProfit() > 0.01 && trade_sell && !cci_highest) CloseAllOrders();
-
+    if (AccountProfit() > 0 /* && trade_buy && !cci_lowest */) CloseAllOrders();
+    // if (AccountProfit() > 0.01 && trade_sell && !cci_highest) CloseAllOrders();
+    
+    if (OrdersTotal() == 0 && Time[0] - order__time > timeout * 7 && IsTesting())
+      Kill();
+    
     /* First order */
     if (OrdersTotal() == 0)
     {
@@ -79,6 +88,7 @@ void UpdateBeforeOrder()
 {
     band_high      = Ask * (1 + bands_dev / 100);
     band_low       = Bid * (1 - bands_dev / 100);
+/*
     double cci     = iCCI(0, 0, cci_period, PRICE_TYPICAL, 1);
     double cci_avg = 0;
 
@@ -86,9 +96,34 @@ void UpdateBeforeOrder()
         cci_avg += iCCI(0, 0, cci_period, PRICE_TYPICAL, i);
 
     cci_avg /= cci_ma;
-
+2
     if (cci_avg > cci_max && cci < cci_avg) cci_highest = 1; else cci_highest = 0;
     if (cci_avg < cci_min && cci > cci_avg) cci_lowest  = 1; else cci_lowest  = 0;
+
+*/  
+    my_network.input_layer[0].output = iMFI(0, 0, 10, 1) / 100;
+    my_network.input_layer[1].output = iDeMarker(0, 0, 10, 1);
+    my_network.input_layer[2].output = (iRVI(0, 0, 10, MODE_SIGNAL, 1) + 1) / 2;
+    my_network.input_layer[3].output = iStochastic(0, 0, 10, 3, 3, MODE_SMA, 0, MODE_SIGNAL, 1) / 100;
+    my_network.input_layer[4].output = (iCCI(0, 0, 10, PRICE_TYPICAL, 1) + 350 ) / 700;
+    
+    my_network.hidden_layer[0].weights[0] = weight_11;
+    my_network.hidden_layer[0].weights[1] = weight_12;
+    my_network.hidden_layer[0].weights[2] = weight_13;
+    my_network.hidden_layer[0].weights[3] = weight_14;
+    my_network.hidden_layer[0].weights[4] = weight_15;
+    my_network.hidden_layer[1].weights[0] = weight_21;
+    my_network.hidden_layer[1].weights[1] = weight_22;
+    my_network.hidden_layer[1].weights[2] = weight_23;
+    my_network.hidden_layer[1].weights[3] = weight_24;
+    my_network.hidden_layer[1].weights[4] = weight_25;
+
+    my_network.hidden_layer[0].threshhold = threshhold_1;
+    my_network.hidden_layer[1].threshhold = threshhold_2;
+    my_network.FeedForward();
+    
+    if (my_network.hidden_layer[0].output >= 0.5 && my_network.hidden_layer[1].output < 0.5) cci_highest = 1; else cci_highest = 0;
+    if (my_network.hidden_layer[1].output >= 0.5 && my_network.hidden_layer[0].output < 0.5) cci_lowest  = 1; else cci_lowest  = 0;
 }
 
 void UpdateAfterOrder()
@@ -147,7 +182,7 @@ void SendOrder(int OP_TYPE)
                           magic_num, 0, clrLimeGreen);
 
     if (IsTesting()  && error < 0) Kill();
-    if (!IsTesting() && error < 0) Print("Order failed.");
+    if (!IsTesting() && error < 0) Print("Order failed\n.");
     UpdateAfterOrder();
 }
 
@@ -183,9 +218,11 @@ void Debug()
     UpdateBeforeOrder();
     int time_difference = TimeCurrent() - Time[0];
     Comment("\n- "      +
-            "Lots: "    + i_lots                         + " - " +
-            "Timeout: " + (Time[0] - order__time) / 3600 + " - " +
-            "Last: "    + last_order_price               + " - " +
-            "Time: "    + time_difference                + " - " +
+            "Lots: "    + i_lots                            + " - " +
+            "Timeout: " + (Time[0] - order__time) / 3600    + " - " +
+            "Last: "    + last_order_price                  + " - " +
+            "Output 1: "  + round(my_network.hidden_layer[0].output * 10000) / 10000 + " - " +
+            "Output 2: "  + round(my_network.hidden_layer[1].output * 10000) / 10000 + " - " +
+            "Time: "    + time_difference                   + " - " +
             "");
 }
