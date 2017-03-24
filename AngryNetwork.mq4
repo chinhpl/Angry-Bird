@@ -3,35 +3,36 @@ extern float weight_12 = 1;
 extern float weight_13 = 1;
 extern float weight_14 = 1;
 extern float weight_15 = 1;
+extern float threshhold_1 = 1;
 extern float weight_21 = 1;
 extern float weight_22 = 1;
 extern float weight_23 = 1;
 extern float weight_24 = 1;
 extern float weight_25 = 1;
+extern float threshhold_2 = 1;
 extern float weight_31 = 1;
 extern float weight_32 = 1;
 extern float weight_33 = 1;
 extern float weight_34 = 1;
 extern float weight_35 = 1;
+extern float threshhold_3 = 1;
 extern float weight_41 = 1;
 extern float weight_42 = 1;
 extern float weight_43 = 1;
 extern float weight_44 = 1;
 extern float weight_45 = 1;
+extern float threshhold_4 = 1;
 extern float o_weight_11 = 1;
 extern float o_weight_12 = 1;
 extern float o_weight_13 = 1;
 extern float o_weight_14 = 1;
+extern float o_threshhold_1 = 1;
 extern float o_weight_21 = 1;
 extern float o_weight_22 = 1;
 extern float o_weight_23 = 1;
 extern float o_weight_24 = 1;
-extern float threshhold_1 = 1;
-extern float threshhold_2 = 1;
-extern float threshhold_3 = 1;
-extern float threshhold_4 = 1;
-extern float o_threshhold_1 = 1;
 extern float o_threshhold_2 = 1;
+
 class Neuron
 {
   public:
