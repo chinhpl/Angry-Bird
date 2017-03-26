@@ -24,10 +24,12 @@ string        name             = "Ilan1.6";
 
 #include "AngryNetwork.mq4";
 
-Network my_network(5, 4, 2);
+Network* my_network;
+
 int init()
 {
     initial_deposit = AccountBalance();
+    my_network = new Network(5, 4, 2);
     UpdateBeforeOrder();
     UpdateAfterOrder();
     Debug();
