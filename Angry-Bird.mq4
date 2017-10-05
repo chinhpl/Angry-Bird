@@ -63,11 +63,12 @@ int start()
 
     /* Closes all orders if there are any */
     RefreshRates();
-    if (AccountProfit() > 0 /* && trade_buy && !cci_lowest */) CloseAllOrders();
+    if (AccountProfit() > 0.00 /* && trade_buy && !cci_lowest */) CloseAllOrders();
     // if (AccountProfit() > 0.01 && trade_sell && !cci_highest) CloseAllOrders();
     
-    if (OrdersTotal() == 0 && Time[0] - order__time > timeout * 7 && IsTesting())
-      Kill();
+    /* Checks Timeout with no orders active*/
+    //if (OrdersTotal() == 0 && Time[0] - order__time > timeout * 7 && IsTesting())
+    //  Kill();
     
     /* First order */
     if (OrdersTotal() == 0)
@@ -78,8 +79,8 @@ int start()
     }
 
     /* Checks Timeout */
-    if (OrdersTotal() > 0 && Time[0] - order__time > timeout && IsTesting())
-        CloseAllOrders();
+    //if (OrdersTotal() > 0 && Time[0] - order__time > timeout && IsTesting())
+    //    Kill();
 
     /* Proceeding orders */
     if (trade_sell && cci_highest && band_low  > last_order_price) SendOrder(OP_SELL);
@@ -239,7 +240,7 @@ void Debug()
     int time_difference = TimeCurrent() - Time[0];
     Comment("\n- "      +
             "Lots: "    + i_lots                            + " - " +
-            "Timeout: " + (Time[0] - order__time) / 3600    + " - " +
+            "Timeout: " + (Time[0] - order__time) / 1 + " - " +
             "Last: "    + last_order_price                  + " - " +
             "Output 1: "  + round(my_network.output_layer[0].output * 10000) / 10000 + " - " +
             "Output 2: "  + round(my_network.output_layer[1].output * 10000) / 10000 + " - " +
